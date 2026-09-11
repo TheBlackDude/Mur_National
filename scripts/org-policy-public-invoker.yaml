@@ -1,0 +1,10 @@
+# Project-scoped exception to the organization's "Domain restricted sharing" policy.
+# Needed so Cloud Functions callables (submitContribution, moderate, report) can grant
+# roles/run.invoker to allUsers, which is how browser clients reach them. Auth is
+# enforced inside the functions (Firebase Auth + App Check), not by IAM.
+# Apply once, as an Organization Policy Administrator:
+#   gcloud org-policies set-policy scripts/org-policy-public-invoker.yaml --project guinea68
+name: projects/3206736012/policies/iam.allowedPolicyMemberDomains
+spec:
+  rules:
+  - allowAll: true
