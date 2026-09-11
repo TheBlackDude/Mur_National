@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+/* Design tokens — MuduPay palette from Screenshot 2.png, Guinea tricolour reserved for the flag, frames and data. */
+@theme {
+  --font-sans: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --color-primary: #3273AC;
+  --color-primary-strong: #275E90;
+  --color-primary-soft: #4E8FBD;
+  --color-primary-tint: #EAF1F8;
+  --color-gold: #EBAB58;
+  --color-gold-strong: #D98F2E;
+  --color-gold-tint: #FBF1E3;
+
+  --color-ink: #121826;
+  --color-muted: #5F6B7A;
+  --color-bg: #F5F7FA;
+  --color-surface: #FFFFFF;
+  --color-rule: #E3E8EF;
+
+  --color-gn-red: #CE1126;
+  --color-gn-yellow: #FCD116;
+  --color-gn-green: #009460;
+
+  --color-ok: #1E9E5A;
+  --color-warn: #D98F2E;
+  --color-danger: #D6323F;
+
+  --radius-card: 20px;
+  --radius-btn: 12px;
+  --shadow-card: 0 8px 24px rgba(18, 24, 38, 0.06);
+}
+
+html { color-scheme: light; }
+body { @apply bg-bg text-ink font-sans antialiased; margin: 0; }
+
+/* Buttons match the onboarding screens: 12px radius, 52px tall, medium weight. */
+.btn, .btn-primary, .btn-outline, .btn-white, .btn-gold {
+  @apply inline-flex items-center justify-center gap-2 h-13 px-6 rounded-[var(--radius-btn)] font-medium text-[15px] transition active:scale-[.98] disabled:opacity-50 disabled:pointer-events-none;
+}
+.btn-primary { @apply bg-primary text-white hover:bg-primary-strong; }
+.btn-outline { @apply border border-primary text-primary bg-transparent hover:bg-primary-tint; }
+.btn-white { @apply bg-white text-primary hover:bg-primary-tint; }
+.btn-gold { @apply bg-gold text-ink hover:bg-gold-strong; }
+
+.card { @apply bg-surface rounded-[var(--radius-card)] shadow-[var(--shadow-card)]; }
+.label { @apply text-xs font-medium tracking-wide uppercase text-muted; }
+.input { @apply w-full h-12 rounded-[var(--radius-btn)] border border-rule bg-surface px-4 text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary; }
+
+.tricolor { display: grid; grid-template-columns: 1fr 1fr 1fr; height: 4px; }
+.tricolor > i:nth-child(1) { background: var(--color-gn-red); }
+.tricolor > i:nth-child(2) { background: var(--color-gn-yellow); }
+.tricolor > i:nth-child(3) { background: var(--color-gn-green); }
+
+.tabular { font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }

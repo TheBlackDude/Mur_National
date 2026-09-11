@@ -1,0 +1,23 @@
+[
+  { "iso": "SN", "name": "Sénégal" }, { "iso": "ML", "name": "Mali" }, { "iso": "CI", "name": "Côte d'Ivoire" },
+  { "iso": "SL", "name": "Sierra Leone" }, { "iso": "LR", "name": "Liberia" }, { "iso": "GW", "name": "Guinée-Bissau" },
+  { "iso": "GM", "name": "Gambie" }, { "iso": "GH", "name": "Ghana" }, { "iso": "NG", "name": "Nigeria" },
+  { "iso": "MA", "name": "Maroc" }, { "iso": "DZ", "name": "Algérie" }, { "iso": "TN", "name": "Tunisie" },
+  { "iso": "EG", "name": "Égypte" }, { "iso": "ET", "name": "Éthiopie" }, { "iso": "ZA", "name": "Afrique du Sud" },
+  { "iso": "AO", "name": "Angola" }, { "iso": "CD", "name": "RD Congo" }, { "iso": "CG", "name": "Congo" },
+  { "iso": "GA", "name": "Gabon" }, { "iso": "CM", "name": "Cameroun" }, { "iso": "TG", "name": "Togo" },
+  { "iso": "BJ", "name": "Bénin" }, { "iso": "BF", "name": "Burkina Faso" }, { "iso": "NE", "name": "Niger" },
+  { "iso": "MR", "name": "Mauritanie" }, { "iso": "LY", "name": "Libye" }, { "iso": "SD", "name": "Soudan" },
+  { "iso": "KE", "name": "Kenya" }, { "iso": "RW", "name": "Rwanda" },
+  { "iso": "FR", "name": "France" }, { "iso": "BE", "name": "Belgique" }, { "iso": "DE", "name": "Allemagne" },
+  { "iso": "ES", "name": "Espagne" }, { "iso": "IT", "name": "Italie" }, { "iso": "PT", "name": "Portugal" },
+  { "iso": "GB", "name": "Royaume-Uni" }, { "iso": "CH", "name": "Suisse" }, { "iso": "NL", "name": "Pays-Bas" },
+  { "iso": "SE", "name": "Suède" }, { "iso": "RU", "name": "Russie" }, { "iso": "TR", "name": "Turquie" },
+  { "iso": "US", "name": "États-Unis" }, { "iso": "CA", "name": "Canada" }, { "iso": "BR", "name": "Brésil" },
+  { "iso": "CU", "name": "Cuba" },
+  { "iso": "SA", "name": "Arabie saoudite" }, { "iso": "AE", "name": "Émirats arabes unis" }, { "iso": "QA", "name": "Qatar" },
+  { "iso": "KW", "name": "Koweït" }, { "iso": "IR", "name": "Iran" }, { "iso": "CN", "name": "Chine" },
+  { "iso": "JP", "name": "Japon" }, { "iso": "KR", "name": "Corée du Sud" }, { "iso": "IN", "name": "Inde" },
+  { "iso": "MY", "name": "Malaisie" }, { "iso": "ID", "name": "Indonésie" }, { "iso": "VN", "name": "Viêt Nam" },
+  { "iso": "AU", "name": "Australie" }, { "iso": "XX", "name": "Autre pays" }
+]

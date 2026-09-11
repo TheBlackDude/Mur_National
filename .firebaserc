@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "default": "mur-national-staging",
+    "staging": "mur-national-staging",
+    "prod": "mur-national-prod"
+  }
+}

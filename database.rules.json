@@ -1,0 +1,7 @@
+{
+  "rules": {
+    "counters": { ".read": true, ".write": false },
+    "seq": { ".read": false, ".write": false },
+    "rate": { ".read": false, ".write": false }
+  }
+}

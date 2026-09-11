@@ -1,0 +1,26 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() { return request.auth != null; }
+    function isStaff() { return signedIn() && (request.auth.token.moderator == true || request.auth.token.editor == true || request.auth.token.maeiage == true || request.auth.token.admin == true); }
+
+    // A device may only write under its own uid, JPEG under 2 MB.
+    match /uploads/{uid}/{file} {
+      allow write: if signedIn() && request.auth.uid == uid
+                   && request.resource.contentType == 'image/jpeg'
+                   && request.resource.size < 2 * 1024 * 1024;
+      allow read: if signedIn() && (request.auth.uid == uid || isStaff());
+    }
+    // Diaspora videos: mission token is validated by the submitVideo callable after upload.
+    match /videos/{mission}/{file} {
+      allow write: if signedIn()
+                   && request.resource.contentType.matches('video/.*')
+                   && request.resource.size < 150 * 1024 * 1024;
+      allow read: if isStaff();
+    }
+    match /public/{file} { allow read: if true; allow write: if false; }
+    match /thumbs/{file} { allow read: if true; allow write: if false; }
+    match /snapshot/{file} { allow read: if true; allow write: if false; }
+    match /exports/{file} { allow read: if isStaff(); allow write: if false; }
+  }
+}

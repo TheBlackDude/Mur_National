@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function hasRole(role) { return signedIn() && request.auth.token[role] == true; }
+    function isStaff() { return hasRole('moderator') || hasRole('editor') || hasRole('maeiage') || hasRole('admin'); }
+
+    // Public wall: approved items only. Nothing is written by clients; Cloud Functions own all writes.
+    match /contributions/{id} {
+      allow read: if resource.data.status == 'approved' || isStaff();
+      allow write: if false;
+    }
+    match /reports/{id} {
+      allow read: if isStaff();
+      allow write: if false;
+    }
+    match /blocklist/{id} {
+      allow read, write: if hasRole('editor') || hasRole('admin');
+    }
+    match /missions/{code} {
+      // Token is checked server-side; the public doc only exposes the name and country.
+      allow read: if true;
+      allow write: if hasRole('admin') || hasRole('maeiage');
+    }
+    match /config/{doc} {
+      allow read: if true;
+      allow write: if hasRole('admin') || hasRole('editor');
+    }
+  }
+}
