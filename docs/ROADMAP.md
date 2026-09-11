@@ -20,13 +20,13 @@ Companion to `ARCHITECTURE.md`. Dates are real: today, 11 Sept 2026, is J‑14. 
 
 | Phase | Dates | Release | Scope | Exit criteria |
 |---|---|---|---|---|
-| **P0 · Cadrage éclair** | 11–13 Sept (J‑14 → J‑12) | — | 48 h with the DCI: frames, domain, frozen scope, moderation rules, commercial posture A/B, hosting statement | Signed one-page scope. Frames delivered. Domain requested. |
+| **P0 · Cadrage éclair** | 11–13 Sept (J‑14 → J‑12) | — | 48 h with the DCI: frames, domain, frozen scope, moderation rules, hosting statement | Signed one-page scope. Frames delivered. Domain requested. |
 | **P1 · Noyau** | 14–18 Sept (J‑11 → J‑7) | **v1.0** on staging | Selfie studio, souvenir card + share, participant number, Wall with filters, live counter, L1/L2 moderation, blocklist, deploy pipeline | A 3G phone submits in < 60 s. A moderator clears 100 items in 10 min. |
 | **P2 · Nation** | 19–21 Sept (J‑6 → J‑4) | **v1.1** on staging → prod | Map (prefectures + world), `/ecran` feed for the 8‑Novembre screen and RTG, dashboard, diaspora video intake + MAEIAGE queue, mission QR posters, kiosk mode, snapshot + degraded mode, Sheets/Drive exports | Load test passed (50 submissions/s, 2 000 Wall viewers). Moderators trained. |
 | **P3 · Avant-première** | 22–24 Sept (J‑3 → J‑1) | **v1.1 live**, countdown mode | Public countdown page, Wall seeded by Government, artists, Ambassadors, Syli, diaspora figures. Posters to 51 missions. Press kit. Content freeze. | ≥ 200 seeded contributions. All 51 mission links tested. War-room rota published. |
 | **P4 · La Semaine** | 25 Sept – 2 Oct | hotfixes only (v1.1.x) | Operations: 24/7 supervision, daily « chiffre du jour », prefecture challenge, mission animation, screen and RTG feed | 2 Oct: certified figure delivered 2 h before the reveal. |
 | **P5 · Après** | 3 Oct – 2 Dec (+60 days) | **v1.2** | Certified final export, rushes delivered to the MAEIAGE film, retrospective, sovereign migration (national DC), originals deleted at day 60, handover and training | Signed acceptance. Sovereign copy verified. Retention job run. |
-| **P6 · Actifs durables** | 2027 → | **v2** | Diaspora engagement registry, reusable ritual (An 69, Syli, Simandou milestones), embed widgets, bridge to the national quiz platform audience | Contract for the permanent platform (posture B) |
+| **P6 · Actifs durables** | 2027 → | **v2** | Diaspora engagement registry, reusable ritual (An 69, Syli, Simandou milestones), embed widgets, bridge to the national quiz platform audience | Decision on the permanent platform |
 
 ## 3. Milestones
 
@@ -106,7 +106,6 @@ Companion to `ARCHITECTURE.md`. Dates are real: today, 11 Sept 2026, is J‑14. 
 | Embed and API | Live-counter widget and read-only API for partner sites and media | MCENI |
 | Sovereign platform | Migration of the core to the national Tier III DC, keeping a CDN for the diaspora | SGG + MuduPay |
 
-Decision needed by the SGG before 2 Oct: posture A (An 68 service) or posture B (reduced fee against the permanent platform contract). Posture B changes P5/P6 from "handover" to "continuation".
 
 ## 8. Risks watched weekly
 

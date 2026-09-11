@@ -1,6 +1,6 @@
 # Fier d'être Guinéen — Mur National · System Architecture (one-week build)
 
-Source: `Note_Conceptuelle_Fier_dEtre_Guineen_Mur_National.pdf` (MuduPay, Sept 2026).
+Source: the campaign concept note (MuduPay, Sept 2026; not in this repository).
 Launch: countdown page 22 Sept · public launch 25 Sept · national figure revealed 2 Oct 2026.
 
 ## 1. Design goals
