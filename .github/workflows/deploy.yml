@@ -64,5 +64,6 @@ jobs:
         with:
           workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
           service_account: ${{ vars.GCP_DEPLOY_SA }}
+          token_format: access_token   # forces the token exchange here, so a federation problem fails in this step
       - name: Deploy functions and rules
-        run: npx --yes firebase-tools@latest deploy --only functions,firestore,storage,database --project prod --non-interactive --force
+        run: npx --yes firebase-tools@latest deploy --only functions,firestore,storage,database --project prod --non-interactive --force --debug 2>&1 | grep -viE 'npm warn' | tail -80
