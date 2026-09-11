@@ -50,6 +50,7 @@
   "admin.approve": "Valider",
   "admin.reject": "Rejeter",
   "admin.forbidden": "Ce compte n'a pas de rôle de modération.",
+  "admin.signout": "Se déconnecter",
   "footer.legal": "Mentions légales",
   "footer.privacy": "Données personnelles",
   "footer.by": "Conçu et réalisé par MuduPay"

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, type User } from 'firebase/auth'
+import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth'
 import { collection, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore'
 import { auth, db, moderate } from '../lib/firebase'
 import { useI18n } from '../lib/i18n'
@@ -32,7 +32,13 @@ export default function Admin() {
       <button className="btn-primary mt-6 w-full" onClick={() => signInWithPopup(auth, new GoogleAuthProvider())}>Google</button>
     </div>
   )
-  if (roles.length === 0) return <p className="card p-8 text-center text-muted">{t('admin.forbidden')}</p>
+  if (roles.length === 0) return (
+    <div className="mx-auto max-w-sm card p-8 text-center grid gap-4">
+      <p className="text-muted">{t('admin.forbidden')}</p>
+      <p className="text-xs text-muted">{user.email}</p>
+      <button className="btn-outline" onClick={() => signOut(auth)}>{t('admin.signout')}</button>
+    </div>
+  )
 
   return (
     <div>
@@ -43,6 +49,7 @@ export default function Admin() {
           <option value="pending">L1 · pending</option>
           <option value="review">L2 · review</option>
         </select>
+        <button className="btn-outline h-10 px-4" onClick={() => signOut(auth)}>{t('admin.signout')}</button>
       </div>
       <ul className="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {queue.map((c) => (
