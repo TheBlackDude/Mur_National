@@ -39,10 +39,34 @@ done
 gcloud iam service-accounts add-iam-policy-binding "$SA" --project "$PROJECT" --role roles/iam.workloadIdentityUser \
   --member "principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL}/attribute.repository/${REPO}" --quiet >/dev/null
 
+# Runtime and build roles for the default compute service account (new organizations grant it nothing by default).
+COMPUTE_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+for role in roles/cloudbuild.builds.builder roles/artifactregistry.writer roles/logging.logWriter roles/storage.objectViewer \
+            roles/eventarc.eventReceiver roles/run.invoker roles/datastore.user roles/firebasedatabase.admin roles/storage.objectAdmin roles/firebaseauth.admin; do
+  gcloud projects add-iam-policy-binding "$PROJECT" --member "serviceAccount:${COMPUTE_SA}" --role "$role" --condition=None --quiet >/dev/null
+  echo "granted $role to compute SA"
+done
+# Service agents firebase-tools expects for 2nd-gen storage triggers.
+gcloud projects add-iam-policy-binding "$PROJECT" --member "serviceAccount:service-${PROJECT_NUMBER}@gs-project-accounts.iam.gserviceaccount.com" --role roles/pubsub.publisher --condition=None --quiet >/dev/null
+gcloud projects add-iam-policy-binding "$PROJECT" --member "serviceAccount:service-${PROJECT_NUMBER}@gcp-sa-pubsub.iam.gserviceaccount.com" --role roles/iam.serviceAccountTokenCreator --condition=None --quiet >/dev/null
+gcloud projects add-iam-policy-binding "$PROJECT" --member "serviceAccount:${SA}" --role roles/resourcemanager.projectIamAdmin --condition=None --quiet >/dev/null
+
 WIF_PROVIDER="projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/${POOL}/providers/${PROVIDER}"
 gh variable set GCP_WIF_PROVIDER --repo "$REPO" --body "$WIF_PROVIDER"
 gh variable set GCP_DEPLOY_SA --repo "$REPO" --body "$SA"
 echo
 echo "Done. GitHub variables set:"
-echo "  GCP_WIF_PROVIDER=$WIF_PROVIDER"
+echo "  GCP_# Runtime and build roles for the default compute service account (new organizations grant it nothing by default).
+COMPUTE_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+for role in roles/cloudbuild.builds.builder roles/artifactregistry.writer roles/logging.logWriter roles/storage.objectViewer \
+            roles/eventarc.eventReceiver roles/run.invoker roles/datastore.user roles/firebasedatabase.admin roles/storage.objectAdmin roles/firebaseauth.admin; do
+  gcloud projects add-iam-policy-binding "$PROJECT" --member "serviceAccount:${COMPUTE_SA}" --role "$role" --condition=None --quiet >/dev/null
+  echo "granted $role to compute SA"
+done
+# Service agents firebase-tools expects for 2nd-gen storage triggers.
+gcloud projects add-iam-policy-binding "$PROJECT" --member "serviceAccount:service-${PROJECT_NUMBER}@gs-project-accounts.iam.gserviceaccount.com" --role roles/pubsub.publisher --condition=None --quiet >/dev/null
+gcloud projects add-iam-policy-binding "$PROJECT" --member "serviceAccount:service-${PROJECT_NUMBER}@gcp-sa-pubsub.iam.gserviceaccount.com" --role roles/iam.serviceAccountTokenCreator --condition=None --quiet >/dev/null
+gcloud projects add-iam-policy-binding "$PROJECT" --member "serviceAccount:${SA}" --role roles/resourcemanager.projectIamAdmin --condition=None --quiet >/dev/null
+
+WIF_PROVIDER=$WIF_PROVIDER"
 echo "  GCP_DEPLOY_SA=$SA"
