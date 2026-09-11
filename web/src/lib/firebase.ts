@@ -7,7 +7,7 @@ import { getFunctions, connectFunctionsEmulator, httpsCallable } from 'firebase/
 import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check'
 
 const env = import.meta.env
-const projectId = env.VITE_FIREBASE_PROJECT_ID || 'mur-national-staging'
+const projectId = env.VITE_FIREBASE_PROJECT_ID || 'guinea68'
 
 /** Config is missing until the repository variables are set. Fallbacks keep the shell rendering
  *  (counter shows a dash, uploads fail with a clear message) instead of crashing on load. */

@@ -1,7 +1,7 @@
 {
   "projects": {
-    "default": "mur-national-staging",
-    "staging": "mur-national-staging",
-    "prod": "mur-national-prod"
+    "default": "guinea68",
+    "staging": "guinea68",
+    "prod": "guinea68"
   }
 }
