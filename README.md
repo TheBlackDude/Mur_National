@@ -30,7 +30,7 @@ Local emulators: `npx firebase-tools emulators:start` at the repo root and `VITE
 
 Push to `main`: GitHub Actions builds the PWA to GitHub Pages and deploys functions and rules to prod.
 Repository variables: `VITE_FIREBASE_*`, `VITE_RECAPTCHA_SITE_KEY`, `VITE_BASE` (`/` with a custom domain, `/<repo>/` on github.io).
-Repository secret: `FIREBASE_SERVICE_ACCOUNT` (JSON of a service account with Firebase Admin + Cloud Functions Developer).
+CI auth to Google Cloud is keyless: run `scripts/wif-setup.sh` once (see `docs/FIREBASE_SETUP.md`).
 Netlify: connect the repo, `netlify.toml` does the rest.
 
 ## Staff roles

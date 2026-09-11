@@ -57,13 +57,13 @@ scripts/gh-vars.sh            # reads web/.env and sets each VITE_* repository v
 ```
 Then re-run the Deploy workflow (Actions → Deploy → Run workflow) or push a commit. The live counter stops showing a dash once this is done.
 
-## 9. Service account for CI deploys
-1. Project settings → **Service accounts** → **Generate new private key** → download the JSON.
-2. Google Cloud console → IAM → find `firebase-adminsdk-…@<project-id>.iam.gserviceaccount.com` → add roles **Editor** and **Service Account User** (enough for `firebase deploy` of functions, rules and scheduled jobs on a short project).
-3. GitHub → repo Settings → Secrets and variables → Actions → **New repository secret** `FIREBASE_SERVICE_ACCOUNT`, value = the whole JSON. Or:
-   ```bash
-   gh secret set FIREBASE_SERVICE_ACCOUNT < ~/Downloads/guinea68-xxxx.json
-   ```
+## 9. CI deploys without a key (Workload Identity Federation)
+Google's organization policy blocks service-account key creation, so GitHub Actions authenticates keylessly instead.
+```bash
+gcloud auth login                 # as a project owner
+scripts/wif-setup.sh              # creates the pool, provider and github-deploy service account, sets the GitHub variables
+```
+After it runs, every push to `main` deploys functions and rules. No secret is needed.
 
 ## 10. First deploy from your laptop (enables the Google Cloud APIs)
 The first deploy must be interactive so the CLI can enable Cloud Functions, Cloud Build, Artifact Registry, Eventarc, Pub/Sub and Cloud Scheduler on the project.
@@ -91,6 +91,6 @@ Roles: `moderator` (L1), `editor` (L2 DCI), `maeiage`, `admin`, `kiosk`. The per
 - [ ] Firestore, Realtime Database, Storage in europe-west1
 - [ ] Web app registered, `web/.env` filled, `scripts/gh-vars.sh` run
 - [ ] reCAPTCHA v3 key and App Check registration
-- [ ] Service-account JSON as `FIREBASE_SERVICE_ACCOUNT`
+- [ ] `scripts/wif-setup.sh` run (keyless CI auth)
 - [ ] First interactive deploy done, APIs enabled
 - [ ] First moderator role set
