@@ -4,7 +4,7 @@ import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore'
 import { getDatabase, connectDatabaseEmulator } from 'firebase/database'
 import { getStorage, connectStorageEmulator } from 'firebase/storage'
 import { getFunctions, connectFunctionsEmulator, httpsCallable } from 'firebase/functions'
-import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check'
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check'
 
 const env = import.meta.env
 const projectId = env.VITE_FIREBASE_PROJECT_ID || 'guinea68'
@@ -25,7 +25,8 @@ export const app = initializeApp({
 })
 
 if (env.VITE_RECAPTCHA_SITE_KEY) {
-  initializeAppCheck(app, { provider: new ReCaptchaV3Provider(env.VITE_RECAPTCHA_SITE_KEY), isTokenAutoRefreshEnabled: true })
+  // reCAPTCHA Enterprise score key (created with gcloud, registered in App Check). Tokens refresh automatically.
+  initializeAppCheck(app, { provider: new ReCaptchaEnterpriseProvider(env.VITE_RECAPTCHA_SITE_KEY), isTokenAutoRefreshEnabled: true })
 }
 
 export const auth = getAuth(app)

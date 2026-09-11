@@ -47,9 +47,15 @@ Do the steps in this order; later steps depend on earlier ones.
 Keep `VITE_BASE=/Mur_National/` while the site lives on github.io.
 
 ## 7. App Check (bot protection)
-1. Go to https://www.google.com/recaptcha/admin/create → label `Mur National`, type **reCAPTCHA v3**, domains `theblackdude.github.io` and `localhost`. Copy the **site key** into `VITE_RECAPTCHA_SITE_KEY` and keep the **secret key** for the next step.
-2. Firebase → Build → **App Check** → Apps → register the web app with **reCAPTCHA v3**, paste the secret key.
-3. APIs tab: leave everything in **monitoring** (unenforced) until the D7 load test, then enforce Firestore, Realtime Database and Storage. Callables already require App Check in code; if calls fail with `unauthenticated` before the site key is set, that is why.
+Done with reCAPTCHA Enterprise, which has an API, instead of classic reCAPTCHA v3, which only has a web console:
+```bash
+gcloud services enable recaptchaenterprise.googleapis.com firebaseappcheck.googleapis.com --project guinea68
+gcloud recaptcha keys create --web --display-name="Mur National" --domains=theblackdude.github.io,localhost --integration-type=score --project guinea68
+# then register the printed key with App Check (PATCH .../apps/<appId>/recaptchaEnterpriseConfig, siteKey=<key>)
+```
+The site key goes in `VITE_RECAPTCHA_SITE_KEY`; the client uses `ReCaptchaEnterpriseProvider`. Add `fierdetreguineen.gn` to the key's domains when the domain exists (`gcloud recaptcha keys update`).
+Enterprise is free up to 10 000 assessments a month, then about 1 USD per 1 000; App Check tokens last an hour, so a week at 100 000 participants costs on the order of 100 USD.
+Leave enforcement in the App Check → APIs tab in **monitoring** until the D7 load test; callables already enforce App Check in code.
 
 ## 8. Push the web config to GitHub
 ```bash
@@ -90,7 +96,7 @@ Roles: `moderator` (L1), `editor` (L2 DCI), `maeiage`, `admin`, `kiosk`. The per
 - [ ] Anonymous + Google sign-in, github.io authorised
 - [ ] Firestore, Realtime Database, Storage in europe-west1
 - [ ] Web app registered, `web/.env` filled, `scripts/gh-vars.sh` run
-- [ ] reCAPTCHA v3 key and App Check registration
+- [x] reCAPTCHA Enterprise key and App Check registration
 - [ ] `scripts/wif-setup.sh` run (keyless CI auth)
 - [ ] First interactive deploy done, APIs enabled
 - [ ] First moderator role set
