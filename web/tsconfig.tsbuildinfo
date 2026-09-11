@@ -1,1 +1,0 @@
-{"root":["./src/app.tsx","./src/main.tsx","./src/components/layout.tsx","./src/components/livecounter.tsx","./src/lib/firebase.ts","./src/lib/i18n.tsx","./src/lib/image.ts","./src/pages/admin.tsx","./src/pages/home.tsx","./src/pages/map.tsx","./src/pages/screen.tsx","./src/pages/selfie.tsx","./src/pages/video.tsx","./src/pages/wall.tsx","./vite.config.ts"],"version":"5.9.3"}

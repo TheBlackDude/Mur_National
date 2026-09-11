@@ -8,3 +8,4 @@ lib/
 .firebase/
 firebase-debug.log
 web/dev-dist/
+web/tsconfig.tsbuildinfo
