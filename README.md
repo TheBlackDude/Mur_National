@@ -30,7 +30,7 @@ Local emulators: `npx firebase-tools emulators:start` at the repo root and `VITE
 
 Push to `main`: GitHub Actions builds the PWA to GitHub Pages and deploys functions and rules to prod.
 Repository variables: `VITE_FIREBASE_*`, `VITE_RECAPTCHA_SITE_KEY`, `VITE_BASE` (`/` with a custom domain, `/<repo>/` on github.io).
-CI auth to Google Cloud is keyless: run `scripts/wif-setup.sh` once (see `docs/FIREBASE_SETUP.md`).
+CI auth to Google Cloud is keyless: run `scripts/wif-setup.sh` once (see `docs/FIREBASE_SETUP.md`). Callables need public invokers, which the organization policy blocks by default: apply `scripts/org-policy-public-invoker.yaml` once as an Organization Policy Administrator.
 Netlify: connect the repo, `netlify.toml` does the rest.
 
 ## Staff roles
