@@ -10,6 +10,7 @@ const MapPage = lazy(() => import('./pages/Map'))
 const Screen = lazy(() => import('./pages/Screen'))
 const Video = lazy(() => import('./pages/Video'))
 const Admin = lazy(() => import('./pages/Admin'))
+const FramesPreview = import.meta.env.DEV ? lazy(() => import('./pages/FramesPreview')) : null
 
 const Loading = () => <div className="p-8 text-center text-muted">…</div>
 
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="/carte" element={<MapPage />} />
           <Route path="/video" element={<Video />} />
           <Route path="/admin/*" element={<Admin />} />
+          {FramesPreview && <Route path="/dev/cadres" element={<FramesPreview />} />}
         </Route>
       </Routes>
     </Suspense>

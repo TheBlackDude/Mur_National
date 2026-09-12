@@ -2,12 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { ref as sref, uploadBytes } from 'firebase/storage'
 import { ensureAnonymousUser, storage, submitContribution } from '../lib/firebase'
-import { compose, drawSquare, fileToBitmap, shareOrDownload, souvenirCard, toJpegUnder } from '../lib/image'
+import { compose, drawSquare, fileToBitmap, scaled, shareOrDownload, souvenirCard, toJpegUnder } from '../lib/image'
+import { FRAME_IDS, type FrameId } from '../lib/frames'
 import { useI18n } from '../lib/i18n'
 import prefectures from '../data/prefectures.json'
 import countries from '../data/countries.json'
 
-type Frame = 'A' | 'B' | 'C'
+type Frame = FrameId
 type Step = 1 | 2 | 3 | 4
 
 export default function Selfie() {
@@ -19,6 +20,7 @@ export default function Selfie() {
   const [photo, setPhoto] = useState<HTMLCanvasElement | null>(null)
   const [frame, setFrame] = useState<Frame>('A')
   const [preview, setPreview] = useState<string>('')
+  const [thumbs, setThumbs] = useState<Record<Frame, string> | null>(null)
   const [composed, setComposed] = useState<HTMLCanvasElement | null>(null)
   const [mode, setMode] = useState<'guinea' | 'diaspora'>('guinea')
   const [prefecture, setPrefecture] = useState('')
@@ -36,9 +38,19 @@ export default function Selfie() {
   useEffect(() => {
     let alive = true
     if (!photo) return
-    compose(photo, frame).then((c) => { if (!alive) return; setComposed(c); setPreview(c.toDataURL('image/jpeg', 0.7)) })
+    compose(photo, frame, lang).then((c) => { if (!alive) return; setComposed(c); setPreview(c.toDataURL('image/jpeg', 0.7)) })
     return () => { alive = false }
-  }, [photo, frame])
+  }, [photo, frame, lang])
+
+  // One small rendition per frame for the picker.
+  useEffect(() => {
+    let alive = true
+    if (!photo) { setThumbs(null); return }
+    const small = scaled(photo, 360)
+    Promise.all(FRAME_IDS.map((f) => compose(small, f, lang).then((c) => [f, c.toDataURL('image/jpeg', 0.75)] as const)))
+      .then((pairs) => { if (alive) setThumbs(Object.fromEntries(pairs) as Record<Frame, string>) })
+    return () => { alive = false }
+  }, [photo, lang])
 
   async function onFile(file?: File) {
     if (!file) return
@@ -107,10 +119,14 @@ export default function Selfie() {
 
       {step === 2 && (
         <div className="mt-4 grid gap-3">
-          <div className="grid grid-cols-3 gap-2">
-            {(['A', 'B', 'C'] as Frame[]).map((f) => (
-              <button key={f} onClick={() => setFrame(f)} className={`h-12 rounded-[var(--radius-btn)] font-medium border ${frame === f ? 'border-primary bg-primary-tint text-primary' : 'border-rule text-muted'}`}>
-                Cadre {f}
+          <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label={t('selfie.step2')}>
+            {FRAME_IDS.map((f) => (
+              <button key={f} role="radio" aria-checked={frame === f} onClick={() => setFrame(f)}
+                className={`p-1.5 rounded-[var(--radius-btn)] border-2 text-sm font-medium transition ${frame === f ? 'border-primary bg-primary-tint text-primary' : 'border-rule text-muted'}`}>
+                <span className="block aspect-square rounded-lg overflow-hidden bg-primary-tint">
+                  {thumbs && <img src={thumbs[f]} alt="" className="w-full h-full object-cover" />}
+                </span>
+                <span className="block mt-1.5">{t(`selfie.frame${f}`)}</span>
               </button>
             ))}
           </div>

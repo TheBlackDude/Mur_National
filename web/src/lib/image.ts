@@ -1,4 +1,5 @@
 /** Client-side image pipeline: resize, compose the official frame, watermark, export JPEG. */
+import { drawFrame, ensureFonts, type FrameId, type Lang, type Watermark } from './frames'
 
 export const MAX_EDGE = 1600
 export const JPEG_QUALITY = 0.82
@@ -21,7 +22,7 @@ export function drawSquare(bmp: ImageBitmap, size = MAX_EDGE): HTMLCanvasElement
 }
 
 const frameCache = new Map<string, Promise<HTMLImageElement>>()
-export function loadFrame(id: 'A' | 'B' | 'C'): Promise<HTMLImageElement> {
+export function loadFrame(id: FrameId): Promise<HTMLImageElement> {
   if (!frameCache.has(id)) {
     frameCache.set(id, new Promise((resolve, reject) => {
       const img = new Image()
@@ -33,32 +34,35 @@ export function loadFrame(id: 'A' | 'B' | 'C'): Promise<HTMLImageElement> {
   return frameCache.get(id)!
 }
 
-/** Frame + watermark over the square photo. Returns the composed canvas. */
-export async function compose(photo: HTMLCanvasElement, frameId: 'A' | 'B' | 'C'): Promise<HTMLCanvasElement> {
+/** Frame + watermark over the square photo. Official PNG frames win when present; otherwise the Canvas frames in frames.ts. */
+export async function compose(photo: HTMLCanvasElement, frameId: FrameId, lang: Lang = 'fr'): Promise<HTMLCanvasElement> {
   const out = document.createElement('canvas')
   out.width = out.height = photo.width
   const ctx = out.getContext('2d')!
-  ctx.drawImage(photo, 0, 0)
+  const w = out.width
+  await ensureFonts()
+  let wm: Watermark
   try {
     const frame = await loadFrame(frameId)
-    ctx.drawImage(frame, 0, 0, out.width, out.height)
+    ctx.drawImage(photo, 0, 0)
+    ctx.drawImage(frame, 0, 0, w, w)
+    wm = { x: w * 0.06, y: w * 0.955, size: w * 0.022, align: 'left', color: 'rgba(255,255,255,.85)' }
   } catch {
-    // Placeholder until the DCI delivers the official PNG frames: tricolour border + "68 ans".
-    const w = out.width, b = Math.round(w * 0.045)
-    ctx.fillStyle = '#CE1126'; ctx.fillRect(0, 0, w, b)
-    ctx.fillStyle = '#FCD116'; ctx.fillRect(0, w - b, w, b)
-    ctx.fillStyle = '#009460'; ctx.fillRect(0, 0, b, w); ctx.fillRect(w - b, 0, b, w)
-    ctx.fillStyle = 'rgba(18,24,38,.75)'
-    ctx.font = `700 ${Math.round(w * 0.06)}px "DM Sans", sans-serif`
-    ctx.textAlign = 'right'
-    ctx.fillText('68 ans · Fier d’être Guinéen', w - b * 1.6, w - b * 1.8)
+    wm = drawFrame(ctx, photo, w, frameId, lang)
   }
-  // Watermark
-  ctx.font = `500 ${Math.round(out.width * 0.022)}px "DM Sans", sans-serif`
-  ctx.fillStyle = 'rgba(255,255,255,.85)'
-  ctx.textAlign = 'left'
-  ctx.fillText('fierdetreguineen.gn', Math.round(out.width * 0.06), Math.round(out.height * 0.955))
+  ctx.font = `500 ${Math.round(wm.size)}px "DM Sans", sans-serif`
+  ctx.fillStyle = wm.color
+  ctx.textAlign = wm.align
+  ctx.fillText('fierdetreguineen.gn', wm.x, wm.y)
   return out
+}
+
+/** Downscaled copy of a square canvas, for the frame picker thumbnails. */
+export function scaled(src: HTMLCanvasElement, size: number): HTMLCanvasElement {
+  const c = document.createElement('canvas')
+  c.width = c.height = size
+  c.getContext('2d')!.drawImage(src, 0, 0, size, size)
+  return c
 }
 
 /** Souvenir card: composed photo + participant number band. */
