@@ -4,6 +4,8 @@ import { collection, doc, getDoc, getDocs, limit, orderBy, query, startAfter, wh
 import { db, report } from '../lib/firebase'
 import { useI18n } from '../lib/i18n'
 import Lightbox, { type LightboxItem } from '../components/Lightbox'
+import Countdown from '../components/Countdown'
+import { useAppConfig, useSnapshot } from '../lib/snapshot'
 import prefectures from '../data/prefectures.json'
 import countries from '../data/countries.json'
 
@@ -41,8 +43,16 @@ export default function Wall() {
     }
     return null
   }, [params])
-  const personalities = params.get('tab') === 'personnalites'
   const openId = params.get('c')
+
+  // Pre-launch: countdown + the seeded personalities only (?apercu=1 previews the full Wall).
+  // Degraded: config/app.degraded or a Firestore failure → serve the 2-minute snapshot, filters off.
+  const cfg = useAppConfig()
+  const [fsFailed, setFsFailed] = useState(false)
+  const preLaunch = !!cfg.launchAt && Date.now() < cfg.launchAt.getTime() && params.get('apercu') !== '1'
+  const degraded = cfg.degraded || fsFailed
+  const { snap, ageMin } = useSnapshot(120_000, degraded)
+  const personalities = preLaunch || params.get('tab') === 'personnalites'
 
   const [featured, setFeatured] = useState<Item[]>([])
   const [items, setItems] = useState<Item[]>([])
@@ -79,6 +89,9 @@ export default function Wall() {
       setItems((prev) => (reset ? rows : [...prev, ...rows]))
       setCursor(snap.docs.at(-1) ?? null)
       setDone(snap.size < PAGE)
+    } catch (e) {
+      console.warn('[wall] firestore, falling back to the snapshot', e)
+      setFsFailed(true)
     } finally { setLoading(false) }
   }, [filter, personalities])
 
@@ -86,6 +99,7 @@ export default function Wall() {
   useEffect(() => {
     let alive = true
     setItems([]); setFeatured([]); setCursor(null); setDone(false)
+    if (cfg.degraded) return
     ;(async () => {
       let pinned: Item[] = []
       if (!filter && !personalities) {
@@ -99,12 +113,18 @@ export default function Wall() {
       await load(true, null, new Set(pinned.map((p) => p.id)))
     })()
     return () => { alive = false }
-  }, [filter, personalities, load])
+  }, [filter, personalities, load, cfg.degraded])
 
   useEffect(() => { setReported(Object.fromEntries(readReported().map((id) => [id, 'already' as ReportState]))) }, [])
 
   // Visible list, in display order.
-  const all = useMemo(() => [...featured, ...items], [featured, items])
+  const all = useMemo<Item[]>(() => {
+    if (degraded && snap) {
+      const rows = snap.recent.map((r) => ({ id: r.id, thumbUrl: r.thumbUrl, participantNumber: r.participantNumber, prefecture: r.prefecture, country: r.country, featured: r.featured }))
+      return personalities ? rows.filter((r) => r.featured) : rows
+    }
+    return [...featured, ...items]
+  }, [degraded, snap, personalities, featured, items])
   const openIndex = openId ? all.findIndex((x) => x.id === openId) : -1
   const openItem: Item | null = openIndex >= 0 ? all[openIndex] : (extra && extra.id === openId ? extra : null)
 
@@ -146,16 +166,25 @@ export default function Wall() {
 
   return (
     <div>
+      {preLaunch && cfg.launchAt && (
+        <div className="mb-6"><Countdown to={cfg.launchAt} title={t('wall.countdown.title')} lede={t('wall.countdown.lede')} /></div>
+      )}
       <div className="flex flex-wrap items-end gap-3 justify-between">
         <h1 className="text-2xl font-bold">{t('wall.title')}</h1>
-        <div className="flex gap-2" role="tablist">
+        {!preLaunch && <div className="flex gap-2" role="tablist">
           <button role="tab" aria-selected={!personalities} className={tabClass(!personalities)} onClick={() => setTab(false)}>{t('wall.filter.all')}</button>
           <button role="tab" aria-selected={personalities} className={tabClass(personalities)} onClick={() => setTab(true)}>{t('wall.tab.personalities')}</button>
-        </div>
+        </div>}
       </div>
+      {degraded && (
+        <p className="mt-3 text-sm text-muted" role="status">
+          {ageMin === null ? '' : `${ageMin === 0 ? t('wall.updatedNow') : t('wall.degraded', { m: ageMin })} · `}{t('wall.degradedHint')}
+        </p>
+      )}
 
       {!personalities && (
         <div className="flex flex-wrap gap-2 mt-4">
+          <fieldset disabled={degraded} className="contents">
           <select className="input h-10 w-auto" aria-label={t('wall.filter.region')} value={filter?.field === 'region' ? filter.value : ''} onChange={(e) => setFilter('region', e.target.value)}>
             <option value="">{t('wall.filter.region')}</option>{regions.map((r) => <option key={r}>{r}</option>)}
           </select>
@@ -166,6 +195,7 @@ export default function Wall() {
             <option value="">{t('wall.filter.country')}</option>{countries.map((c) => <option key={c.iso} value={c.iso}>{c.name}</option>)}
           </select>
           {filter && <button className="btn-outline h-10 px-4" onClick={() => setFilter('region', '')}>{t('wall.filter.all')}</button>}
+          </fieldset>
         </div>
       )}
 
@@ -198,7 +228,7 @@ export default function Wall() {
           </li>
         ))}
       </ul>
-      {!done && items.length > 0 && (
+      {!degraded && !done && items.length > 0 && (
         <div className="text-center mt-6">
           <button className="btn-outline" disabled={loading} onClick={() => load(false, cursor, new Set(featured.map((f) => f.id)))}>{t('wall.more')}</button>
         </div>

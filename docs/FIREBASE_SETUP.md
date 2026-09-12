@@ -29,6 +29,12 @@ Do the steps in this order; later steps depend on earlier ones.
 2. **Production mode**, location **europe-west1**.
 3. Note the bucket name in the header. New projects get `<project-id>.firebasestorage.app`, not `appspot.com`. That value is `VITE_FIREBASE_STORAGE_BUCKET`.
 
+The Wall's degraded mode, the map and the screen feed `fetch()` `snapshot/latest.json` from the browser, which needs CORS on the bucket (Firebase Storage does not send it by default). Apply the read-only policy in `scripts/storage-cors.json` once:
+
+```bash
+gcloud storage buckets update gs://guinea68.firebasestorage.app --cors-file=scripts/storage-cors.json
+```
+
 ## 6. Register the web app and collect the config
 1. Project settings → General → **Your apps** → **Add app** → Web (`</>`).
 2. Nickname `Mur National web`. Leave Firebase Hosting unticked. Register.

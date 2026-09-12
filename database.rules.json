@@ -18,6 +18,10 @@
         ".write": "auth != null && (auth.token.moderator == true || auth.token.editor == true || auth.token.admin == true)",
         ".validate": "newData.hasChildren(['uid','at']) || !newData.exists()"
       }
+    },
+    "stats": {
+      ".read": "auth != null && (auth.token.moderator == true || auth.token.editor == true || auth.token.admin == true || auth.token.maeiage == true)",
+      ".write": false
     }
   }
 }

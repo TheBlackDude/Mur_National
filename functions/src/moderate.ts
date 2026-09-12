@@ -120,11 +120,37 @@ async function blockDevice(uid: string, reason: string, a: Audit) {
   await db.doc(`blocklist/uid:${uid}`).set({ type: 'uid', uid, reason, by: a.by, byEmail: a.byEmail, createdAt: FieldValue.serverTimestamp() })
 }
 
-/** National + prefecture or country counters in one multi-path RTDB update. */
+/**
+ * National + prefecture or country counters in one multi-path RTDB update.
+ * An approval (+1) also feeds the dashboard: stats/hourly/{UTC hour} and a moderation-latency
+ * histogram stats/latencyHist/{UTC hour}/{bucket}. Approvals are events, so -1 never touches stats.
+ */
 export async function bump(c: DocumentData, delta: 1 | -1) {
   const updates: Record<string, object> = { 'counters/national': increment(delta) }
   if (c.prefecture) updates[`counters/prefectures/${c.prefecture}`] = increment(delta)
   if (c.country) updates[`counters/countries/${c.country}`] = increment(delta)
+  if (delta === 1) {
+    const hour = hourKey(new Date())
+    updates[`stats/hourly/${hour}`] = increment(1)
+    const created: Date | undefined = typeof c.createdAt?.toDate === 'function' ? c.createdAt.toDate() : undefined
+    if (created) updates[`stats/latencyHist/${hour}/${latencyBucket((Date.now() - created.getTime()) / 60_000)}`] = increment(1)
+  }
   await rtdb.ref().update(updates)
 }
 const increment = (n: number) => ({ '.sv': { increment: n } })
+
+/** YYYYMMDDHH in UTC: sortable, and the dashboard rebuilds the last 48 keys the same way. */
+export function hourKey(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getUTCFullYear()}${p(d.getUTCMonth() + 1)}${p(d.getUTCDate())}${p(d.getUTCHours())}`
+}
+
+export type LatencyBucket = 'lt5' | 'lt15' | 'lt30' | 'lt60' | 'lt120' | 'ge120'
+export function latencyBucket(minutes: number): LatencyBucket {
+  if (minutes < 5) return 'lt5'
+  if (minutes < 15) return 'lt15'
+  if (minutes < 30) return 'lt30'
+  if (minutes < 60) return 'lt60'
+  if (minutes < 120) return 'lt120'
+  return 'ge120'
+}

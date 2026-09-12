@@ -6,6 +6,7 @@ import { useI18n } from '../lib/i18n'
 import Queue from '../admin/Queue'
 import Search from '../admin/Search'
 import Blocklist from '../admin/Blocklist'
+import Dashboard from '../admin/Dashboard'
 
 const ROLES = ['moderator', 'editor', 'maeiage', 'admin'] as const
 
@@ -51,6 +52,7 @@ export default function Admin() {
           {canEdit && <NavLink to="/admin/revue" className={tab}>{t('admin.nav.l2')}</NavLink>}
           <NavLink to="/admin/recherche" className={tab}>{t('admin.nav.search')}</NavLink>
           <NavLink to="/admin/blocages" className={tab}>{t('admin.nav.blocklist')}</NavLink>
+          <NavLink to="/admin/tableau" className={tab}>{t('admin.nav.dashboard')}</NavLink>
         </nav>
         <span className="text-xs text-muted">{user.email} · {roles.join(', ')}</span>
         <button className="btn-outline h-9 px-3 text-xs" onClick={() => signOut(auth)}>{t('admin.signout')}</button>
@@ -60,6 +62,7 @@ export default function Admin() {
         <Route path="revue" element={canEdit ? <Queue level="review" uid={user.uid} canEdit /> : <p className="card p-8 text-center text-muted">{t('admin.editorOnly')}</p>} />
         <Route path="recherche" element={<Search canEdit={canEdit} />} />
         <Route path="blocages" element={<Blocklist canEdit={canEdit} />} />
+        <Route path="tableau" element={<Dashboard canEdit={canEdit} />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
     </div>
