@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { ref as sref, uploadBytes } from 'firebase/storage'
 import { ensureAnonymousUser, storage, submitContribution } from '../lib/firebase'
 import { compose, drawSquare, fileToBitmap, scaled, shareOrDownload, souvenirCard, toJpegUnder } from '../lib/image'
-import { FRAME_IDS, type FrameId } from '../lib/frames'
+import { FRAME_IDS, SITE_DOMAIN, type FrameId } from '../lib/frames'
 import { useI18n } from '../lib/i18n'
 import prefectures from '../data/prefectures.json'
 import countries from '../data/countries.json'
@@ -91,7 +91,7 @@ export default function Selfie() {
     if (!composed || !result) return
     const card = souvenirCard(composed, result.participantNumber, lang)
     const blob = await toJpegUnder(card, 600_000)
-    await shareOrDownload(blob, `fier-guineen-${result.participantNumber}.jpg`, `#FierDetreGuineen · Participant n°${result.participantNumber} · fierdetreguineen.gn`)
+    await shareOrDownload(blob, `fier-guineen-${result.participantNumber}.jpg`, `#FierDetreGuineen · Participant n°${result.participantNumber} · ${SITE_DOMAIN}`)
   }
 
   function reset() { setStep(1); setPhoto(null); setComposed(null); setPreview(''); setResult(null); setConsent(false); setMinor(false) }

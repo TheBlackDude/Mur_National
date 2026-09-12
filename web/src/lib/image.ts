@@ -1,5 +1,5 @@
 /** Client-side image pipeline: resize, compose the official frame, watermark, export JPEG. */
-import { drawFrame, ensureFonts, type FrameId, type Lang, type Watermark } from './frames'
+import { drawFrame, ensureFonts, SITE_DOMAIN, type FrameId, type Lang, type Watermark } from './frames'
 
 export const MAX_EDGE = 1600
 export const JPEG_QUALITY = 0.82
@@ -53,7 +53,7 @@ export async function compose(photo: HTMLCanvasElement, frameId: FrameId, lang: 
   ctx.font = `500 ${Math.round(wm.size)}px "DM Sans", sans-serif`
   ctx.fillStyle = wm.color
   ctx.textAlign = wm.align
-  ctx.fillText('fierdetreguineen.gn', wm.x, wm.y)
+  ctx.fillText(SITE_DOMAIN, wm.x, wm.y)
   return out
 }
 

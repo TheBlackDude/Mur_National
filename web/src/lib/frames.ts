@@ -7,6 +7,9 @@ export type FrameId = 'A' | 'B' | 'C'
 export const FRAME_IDS: FrameId[] = ['A', 'B', 'C']
 export type Lang = 'fr' | 'en'
 
+/** Public domain printed on every photo and share text. Bought 15 Sept 2026; the slogan and hashtag stay 'Fier d'être Guinéen'. */
+export const SITE_DOMAIN = 'guineen68.com'
+
 const GN = { red: '#CE1126', yellow: '#FCD116', green: '#009460' }
 const MP = { gold: '#EBAB58', ink: '#121826', muted: '#5F6B7A', white: '#FFFFFF' }
 const FONT = '"DM Sans", system-ui, -apple-system, sans-serif'
