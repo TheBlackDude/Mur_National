@@ -11,6 +11,7 @@ const Screen = lazy(() => import('./pages/Screen'))
 const Video = lazy(() => import('./pages/Video'))
 const Admin = lazy(() => import('./pages/Admin'))
 const FramesPreview = import.meta.env.DEV ? lazy(() => import('./pages/FramesPreview')) : null
+const UploadTest = import.meta.env.DEV ? lazy(() => import('./pages/UploadTest')) : null
 
 const Loading = () => <div className="p-8 text-center text-muted">…</div>
 
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/video" element={<Video />} />
           <Route path="/admin/*" element={<Admin />} />
           {FramesPreview && <Route path="/dev/cadres" element={<FramesPreview />} />}
+          {UploadTest && <Route path="/dev/upload" element={<UploadTest />} />}
         </Route>
       </Routes>
     </Suspense>

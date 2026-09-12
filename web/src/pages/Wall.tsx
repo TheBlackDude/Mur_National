@@ -9,7 +9,7 @@ import { useAppConfig, useSnapshot } from '../lib/snapshot'
 import prefectures from '../data/prefectures.json'
 import countries from '../data/countries.json'
 
-type Item = { id: string; thumbUrl?: string; publicUrl?: string; prefecture?: string | null; country?: string | null; participantNumber: number; featured?: boolean; personality?: boolean }
+type Item = { id: string; type?: 'photo' | 'video'; thumbUrl?: string; publicUrl?: string; videoUrl?: string | null; prefecture?: string | null; country?: string | null; participantNumber: number; featured?: boolean; personality?: boolean }
 type FilterField = 'region' | 'prefecture' | 'country'
 type ReportState = 'idle' | 'sent' | 'already'
 
@@ -81,7 +81,7 @@ export default function Wall() {
         ...(personalities ? [where('personality', '==', true)] : []),
         ...(filter && !personalities ? [where(filter.field, '==', filter.value)] : []),
         orderBy('createdAt', 'desc'),
-        limit(PAGE),
+        limit(preLaunch ? 60 : PAGE),
       ]
       const q = query(collection(db, 'contributions'), ...clauses, ...(!reset && after ? [startAfter(after)] : []))
       const snap = await getDocs(q)
@@ -93,7 +93,7 @@ export default function Wall() {
       console.warn('[wall] firestore, falling back to the snapshot', e)
       setFsFailed(true)
     } finally { setLoading(false) }
-  }, [filter, personalities])
+  }, [filter, personalities, preLaunch])
 
   // Reload on filter/tab change; on the unfiltered main tab, pin featured tiles first.
   useEffect(() => {
@@ -102,9 +102,10 @@ export default function Wall() {
     if (cfg.degraded) return
     ;(async () => {
       let pinned: Item[] = []
-      if (!filter && !personalities) {
+      // Main tab pins featured tiles first; before launch the seeded content is personality OR featured, featured first.
+      if ((!filter && !personalities) || preLaunch) {
         try {
-          const snap = await getDocs(query(collection(db, 'contributions'), where('status', '==', 'approved'), where('featured', '==', true), orderBy('createdAt', 'desc'), limit(FEATURED_MAX)))
+          const snap = await getDocs(query(collection(db, 'contributions'), where('status', '==', 'approved'), where('featured', '==', true), orderBy('createdAt', 'desc'), limit(preLaunch ? 60 : FEATURED_MAX)))
           pinned = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Item, 'id'>) }))
         } catch (e) { console.warn('[wall] featured', e) }
       }
@@ -113,14 +114,14 @@ export default function Wall() {
       await load(true, null, new Set(pinned.map((p) => p.id)))
     })()
     return () => { alive = false }
-  }, [filter, personalities, load, cfg.degraded])
+  }, [filter, personalities, preLaunch, load, cfg.degraded])
 
   useEffect(() => { setReported(Object.fromEntries(readReported().map((id) => [id, 'already' as ReportState]))) }, [])
 
   // Visible list, in display order.
   const all = useMemo<Item[]>(() => {
     if (degraded && snap) {
-      const rows = snap.recent.map((r) => ({ id: r.id, thumbUrl: r.thumbUrl, participantNumber: r.participantNumber, prefecture: r.prefecture, country: r.country, featured: r.featured }))
+      const rows = snap.recent.map((r) => ({ id: r.id, type: r.type, thumbUrl: r.thumbUrl, videoUrl: r.videoUrl ?? null, participantNumber: r.participantNumber, prefecture: r.prefecture, country: r.country, featured: r.featured }))
       return personalities ? rows.filter((r) => r.featured) : rows
     }
     return [...featured, ...items]
@@ -219,6 +220,7 @@ export default function Wall() {
               onClick={() => setParam({ c: it.id })}>
               {it.thumbUrl && <img src={it.thumbUrl} alt="" loading="lazy" className="w-full h-full object-cover" />}
             </button>
+            {it.videoUrl && <span className="absolute left-2 top-2 text-[10px] font-medium bg-ink/70 text-white rounded-full px-2 py-0.5 pointer-events-none">▶ {t('wall.video')}</span>}
             <span className="absolute left-2 bottom-2 text-[11px] font-medium bg-white/90 text-ink rounded-full px-2 py-0.5 tabular pointer-events-none">#{it.participantNumber}</span>
             <button
               className="absolute right-1 top-1 text-[10px] text-white/80 hover:text-white bg-black/30 rounded-full px-2 py-0.5"

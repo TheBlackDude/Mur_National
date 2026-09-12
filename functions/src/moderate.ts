@@ -23,14 +23,18 @@ export async function approveContribution(ref: DocumentReference, c: DocumentDat
   if (!c.files?.thumb || !c.files?.public) throw new HttpsError('failed-precondition', 'Still processing, retry in a few seconds')
   const id = ref.id
   const thumbPath = `thumbs/${id}.jpg`, publicPath = `public/${id}.jpg`
+  // Video selfies: the clip goes public next to its poster, keeping its extension.
+  const videoPath = typeof c.files?.video === 'string' && c.files.video ? `public/${id}.${videoExt(c.files.video)}` : null
   await Promise.all([
     bucket().file(c.files.thumb).copy(bucket().file(thumbPath)),
     bucket().file(c.files.public).copy(bucket().file(publicPath)),
+    ...(videoPath ? [bucket().file(c.files.video).copy(bucket().file(videoPath))] : []),
   ])
   await ref.update({
     status: 'approved',
     'files.thumb': thumbPath, 'files.public': publicPath,
     thumbUrl: publicUrl(thumbPath), publicUrl: publicUrl(publicPath),
+    ...(videoPath ? { 'files.video': videoPath, videoUrl: publicUrl(videoPath) } : {}),
     ...stamp(audit),
   })
   await bump(c, +1)
@@ -70,7 +74,11 @@ export const moderate = onCall<Req>(async (req) => {
       await ref.update({ status: 'rejected', rejectReason: reason, ...stamp(audit) })
       if (wasApproved) {
         await bump(c, -1)
-        await Promise.allSettled([bucket().file(`thumbs/${id}.jpg`).delete(), bucket().file(`public/${id}.jpg`).delete()])
+        await Promise.allSettled([
+          bucket().file(`thumbs/${id}.jpg`).delete(),
+          bucket().file(`public/${id}.jpg`).delete(),
+          ...(typeof c.files?.video === 'string' && c.files.video.startsWith('public/') ? [bucket().file(c.files.video).delete()] : []),
+        ])
       }
       if (block) await blockDevice(c.uid, reason ?? 'moderation', audit)
       await history(ref, 'reject', audit, reason, block)
@@ -108,6 +116,8 @@ export const moderate = onCall<Req>(async (req) => {
       return { ok: true }
   }
 })
+
+const videoExt = (p: string) => (p.match(/\.(mp4|webm|mov)$/i)?.[1] ?? 'mp4').toLowerCase()
 
 const stamp = (a: Audit) => ({ moderatedBy: a.by, moderatedByEmail: a.byEmail, moderatedAt: FieldValue.serverTimestamp() })
 

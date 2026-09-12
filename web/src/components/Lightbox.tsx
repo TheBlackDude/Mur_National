@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../lib/i18n'
 
-export type LightboxItem = { id: string; thumbUrl?: string; publicUrl?: string; participantNumber: number; place?: string }
+export type LightboxItem = { id: string; type?: 'photo' | 'video'; thumbUrl?: string; publicUrl?: string; videoUrl?: string | null; participantNumber: number; place?: string }
 
 type Props = {
   item: LightboxItem
@@ -82,7 +82,10 @@ export default function Lightbox({ item, hasPrev, hasNext, onPrev, onNext, onClo
           <button data-autofocus className="btn-white h-10 px-4" onClick={onClose}>{t('wall.close')}</button>
         </div>
         <div className="relative">
-          {src && <img src={src} alt="" className="w-full max-h-[85vh] object-contain rounded-[var(--radius-card)] bg-black/20" />}
+          {item.videoUrl
+            ? <video key={item.id} src={item.videoUrl} poster={src} controls playsInline autoPlay preload="metadata" aria-label={t('wall.playVideo')}
+                className="w-full max-h-[85vh] object-contain rounded-[var(--radius-card)] bg-black/40" />
+            : src && <img src={src} alt="" className="w-full max-h-[85vh] object-contain rounded-[var(--radius-card)] bg-black/20" />}
           {hasPrev && (
             <button aria-label={t('wall.prev')} onClick={onPrev}
               className="absolute left-2 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 text-ink grid place-items-center text-xl hover:bg-white">‹</button>

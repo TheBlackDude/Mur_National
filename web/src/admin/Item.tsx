@@ -16,6 +16,7 @@ type Props = {
 export default function Item({ c, canEdit, busy, lockedBy, onAction, onReject, compact }: Props) {
   const { t, lang } = useI18n()
   const url = useStorageUrl(c.publicUrl ? null : c.files?.public ?? c.files?.original, c.publicUrl)
+  const videoSrc = useStorageUrl(c.videoUrl ? null : c.files?.video ?? null, c.videoUrl ?? null)
   const history = useHistory(compact ? null : c.id)
   const dup = useContribution(compact ? null : c.duplicateOf ?? null)
   const dupUrl = useStorageUrl(dup?.thumbUrl ? null : dup?.files?.thumb, dup?.thumbUrl)
@@ -25,8 +26,11 @@ export default function Item({ c, canEdit, busy, lockedBy, onAction, onReject, c
   return (
     <article className="card overflow-hidden" aria-busy={busy}>
       <div className="grid md:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="bg-ink aspect-square md:aspect-auto md:min-h-[520px] grid place-items-center">
-          {url ? <img src={url} alt="" className="max-h-[70vh] w-full object-contain" /> : <span className="text-white/50 text-sm">…</span>}
+        <div className="bg-ink aspect-square md:aspect-auto md:min-h-[520px] grid place-items-center content-center gap-2">
+          {url ? <img src={url} alt="" className={`${c.files?.video ? 'max-h-[40vh]' : 'max-h-[70vh]'} w-full object-contain`} /> : <span className="text-white/50 text-sm">…</span>}
+          {c.files?.video && (videoSrc
+            ? <video key={c.id} src={videoSrc} poster={url ?? undefined} controls playsInline preload="metadata" className="max-h-[40vh] w-full object-contain" />
+            : <span className="text-white/50 text-sm">…</span>)}
         </div>
         <div className="p-5 grid content-start gap-4 text-sm">
           <header>
@@ -35,6 +39,7 @@ export default function Item({ c, canEdit, busy, lockedBy, onAction, onReject, c
             <p className="text-muted text-xs mt-1">{t('admin.submitted')} {fmtDate(c.createdAt, lang)}</p>
             <div className="flex flex-wrap gap-1.5 mt-2">
               <Tag tone="primary">{t(`admin.status.${c.status}`)}</Tag>
+              {c.files?.video && <Tag tone="primary">{t('wall.video')}{c.durationSec ? ` · ${c.durationSec} s` : ''}</Tag>}
               {c.kiosk && <Tag>{t('admin.kiosk')}</Tag>}
               {c.consent?.minorSupervised && <Tag>{t('admin.minorSupervised')}</Tag>}
               {c.featured && <Tag tone="gold">{t('admin.feature')}</Tag>}

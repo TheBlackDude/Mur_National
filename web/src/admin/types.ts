@@ -13,9 +13,12 @@ export type Contribution = {
   country?: string | null
   kiosk?: boolean
   consent?: { minorSupervised?: boolean }
-  files?: { original?: string; thumb?: string | null; public?: string | null }
+  type?: 'photo' | 'video'
+  durationSec?: number | null
+  files?: { original?: string; thumb?: string | null; public?: string | null; video?: string | null }
   thumbUrl?: string
   publicUrl?: string
+  videoUrl?: string | null
   safeSearch?: Record<string, Likelihood> | null
   duplicateOf?: string | null
   reviewReason?: 'duplicate' | 'safesearch' | 'manual' | null

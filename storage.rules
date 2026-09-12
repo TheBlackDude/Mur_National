@@ -4,11 +4,11 @@ service firebase.storage {
     function signedIn() { return request.auth != null; }
     function isStaff() { return signedIn() && (request.auth.token.moderator == true || request.auth.token.editor == true || request.auth.token.maeiage == true || request.auth.token.admin == true); }
 
-    // A device may only write under its own uid, JPEG under 2 MB.
+    // A device may only write under its own uid: the framed JPEG under 2 MB, or a video selfie clip under 80 MB.
     match /uploads/{uid}/{file} {
       allow write: if signedIn() && request.auth.uid == uid
-                   && request.resource.contentType == 'image/jpeg'
-                   && request.resource.size < 2 * 1024 * 1024;
+                   && ((request.resource.contentType == 'image/jpeg' && request.resource.size < 2 * 1024 * 1024)
+                       || (request.resource.contentType.matches('video/.*') && request.resource.size < 80 * 1024 * 1024));
       allow read: if signedIn() && (request.auth.uid == uid || isStaff());
     }
     // Diaspora videos: mission token is validated by the submitVideo callable after upload.

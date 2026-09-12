@@ -24,10 +24,10 @@ export const app = initializeApp({
   appId: env.VITE_FIREBASE_APP_ID || undefined,
 })
 
-if (env.VITE_RECAPTCHA_SITE_KEY) {
+export const appCheck = env.VITE_RECAPTCHA_SITE_KEY
   // reCAPTCHA Enterprise score key (created with gcloud, registered in App Check). Tokens refresh automatically.
-  initializeAppCheck(app, { provider: new ReCaptchaEnterpriseProvider(env.VITE_RECAPTCHA_SITE_KEY), isTokenAutoRefreshEnabled: true })
-}
+  ? initializeAppCheck(app, { provider: new ReCaptchaEnterpriseProvider(env.VITE_RECAPTCHA_SITE_KEY), isTokenAutoRefreshEnabled: true })
+  : null
 
 export const auth = getAuth(app)
 export const db = getFirestore(app)
@@ -59,7 +59,14 @@ export const call = <Req, Res>(name: string) => {
 }
 
 // Typed callables matching functions/src
-export type SubmitReq = { path: string; frame: 'A' | 'B' | 'C'; prefecture?: string; country?: string; kiosk?: boolean; consent: { public: true; minorSupervised?: boolean } }
+/** Photo: `path` is the framed JPEG. Video selfie: `path` is the framed poster JPEG and `videoPath` the clip (40–90 s).
+ *  `mission` + `token` tag a contribution made from a diplomatic mission link. */
+export type SubmitReq = {
+  path: string; frame: 'A' | 'B' | 'C'; prefecture?: string; country?: string; kiosk?: boolean
+  consent: { public: true; minorSupervised?: boolean }
+  type?: 'photo' | 'video'; videoPath?: string; durationSec?: number
+  mission?: string; token?: string
+}
 export type SubmitRes = { id: string; participantNumber: number }
 export const submitContribution = call<SubmitReq, SubmitRes>('submitContribution')
 

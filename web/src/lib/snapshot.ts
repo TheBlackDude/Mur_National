@@ -3,7 +3,7 @@ import { doc, onSnapshot } from 'firebase/firestore'
 import { app, db } from './firebase'
 
 /** Shape written by the `snapshot` scheduled function every 2 minutes. */
-export type SnapshotItem = { id: string; thumbUrl: string; participantNumber: number; prefecture?: string | null; country?: string | null; featured?: boolean }
+export type SnapshotItem = { id: string; type?: 'photo' | 'video'; thumbUrl: string; videoUrl?: string | null; participantNumber: number; prefecture?: string | null; country?: string | null; featured?: boolean }
 export type Snapshot = {
   updatedAt: string
   national: number

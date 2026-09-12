@@ -21,6 +21,17 @@ export function drawSquare(bmp: ImageBitmap, size = MAX_EDGE): HTMLCanvasElement
   return c
 }
 
+/** Square centre crop of the frame currently shown by a <video>, for the poster of a video selfie. */
+export function posterFromVideo(video: HTMLVideoElement, size = MAX_EDGE): HTMLCanvasElement {
+  const c = document.createElement('canvas')
+  c.width = c.height = size
+  const ctx = c.getContext('2d')!
+  const vw = video.videoWidth || 1, vh = video.videoHeight || 1
+  const s = Math.min(vw, vh)
+  ctx.drawImage(video, (vw - s) / 2, (vh - s) / 2, s, s, 0, 0, size, size)
+  return c
+}
+
 const frameCache = new Map<string, Promise<HTMLImageElement>>()
 export function loadFrame(id: FrameId): Promise<HTMLImageElement> {
   if (!frameCache.has(id)) {
