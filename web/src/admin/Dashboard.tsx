@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { collection, getCountFromServer, query, where } from 'firebase/firestore'
 import { onValue, ref } from 'firebase/database'
-import { db, rtdb } from '../lib/firebase'
+import { db, exportDailyNow, rtdb } from '../lib/firebase'
 import { useI18n } from '../lib/i18n'
 import { useAppConfig } from '../lib/snapshot'
 import prefectures from '../data/prefectures.json'
@@ -31,13 +31,15 @@ function useRtdb<T>(path: string): T | null {
 }
 
 /** SGG / DCI briefing page: totals, hourly curve, territory and diaspora progress, moderation latency. Refreshes every minute. */
-export default function Dashboard({ canEdit: _canEdit }: { canEdit: boolean }) {
+export default function Dashboard({ canEdit }: { canEdit: boolean }) {
   const { t, lang } = useI18n()
   const loc = lang === 'fr' ? 'fr-FR' : 'en-GB'
   const fmt = (n: number) => n.toLocaleString(loc)
   const cfg = useAppConfig()
   const [counts, setCounts] = useState<Record<Status, number> | null>(null)
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null)
+  const [exporting, setExporting] = useState(false)
+  const [exportMsg, setExportMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const hourly = useRtdb<Record<string, number>>('stats/hourly')
   const hist = useRtdb<Record<string, Partial<Record<(typeof BUCKETS)[number], number>>>>('stats/latencyHist')
   const perPref = useRtdb<Record<string, number>>('counters/prefectures')
@@ -84,9 +86,23 @@ export default function Dashboard({ canEdit: _canEdit }: { canEdit: boolean }) {
   const approved = counts?.approved ?? 0
   const pct = Math.min(100, (approved / cfg.targets.national) * 100)
 
+  async function exportNow() {
+    setExporting(true); setExportMsg(null)
+    try {
+      const r = await exportDailyNow({})
+      setExportMsg({ ok: true, text: t('dash.exportDone', { date: r.date, n: fmt(r.national) }) })
+    } catch (e: unknown) {
+      setExportMsg({ ok: false, text: t('dash.exportError', { msg: (e as Error).message }) })
+    } finally { setExporting(false) }
+  }
+
   return (
     <div className="grid gap-4">
-      <p className="text-xs text-muted">{updatedAt ? t('dash.updated', { t: updatedAt.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' }) }) : '…'}</p>
+      <div className="flex flex-wrap items-center gap-3">
+        <p className="text-xs text-muted mr-auto">{updatedAt ? t('dash.updated', { t: updatedAt.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' }) }) : '…'}</p>
+        {canEdit && <button className="btn-outline h-9 px-3 text-xs" disabled={exporting} onClick={exportNow}>{t('dash.exportNow')}</button>}
+      </div>
+      {exportMsg && <p role="status" className={`rounded-xl text-sm p-3 ${exportMsg.ok ? 'bg-primary-tint text-primary' : 'bg-danger/10 text-danger'}`}>{exportMsg.text}</p>}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {STATUSES.map((s) => (

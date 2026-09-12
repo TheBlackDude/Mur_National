@@ -93,9 +93,22 @@ GOOGLE_APPLICATION_CREDENTIALS=~/Downloads/guinea68-xxxx.json node scripts/set-r
 ```
 Roles: `moderator` (L1), `editor` (L2 DCI), `maeiage`, `admin`, `kiosk`. The person signs out and in again to pick it up.
 
-## 12. Vision SafeSearch (D3) and the exports (D6)
-- Google Cloud console → APIs & Services → enable **Cloud Vision API**.
-- For the Sheets and Drive exports, enable **Google Sheets API** and **Google Drive API**, then share the target sheet and folder with the service-account email as editor.
+## 12. Vision SafeSearch, the exports and the alerts
+The Cloud Vision, Google Sheets and Google Drive APIs are enabled on `guinea68`. The functions call them as the compute service account **3206736012-compute@developer.gserviceaccount.com**, so the destinations only need to be shared with that address.
+
+**Chiffre du jour (Sheets + CSV)**
+1. Create a Google Sheet named **Chiffre du jour An 68** in the SGG/DCI shared drive. Share it with the service-account email above as *Editor*.
+2. Copy the id from its URL (`/spreadsheets/d/<id>/edit`) into Firestore `config/app` → `exports.sheetId`.
+3. Every day at 18:00 Conakry the `exportDaily` function appends a row (date, national, newToday, prefecturesLit, countriesLit, videosSelected, backlog, sha256). « Exporter maintenant » on `/admin/tableau` runs the same export on demand. The CSV twin is written to Storage `exports/chiffre-du-jour.csv` (running file) and `exports/chiffre-du-jour-YYYY-MM-DD.csv`; staff can download them from the Storage console. The sha256 column certifies the row for 2 October.
+
+**Rushes for the film (Drive)**
+1. Create a Drive folder **Rushes An 68** for the MAEIAGE film editors. Share it with the service-account email as *Editor* (or add the account as a member of the shared drive).
+2. Put the folder id (`/folders/<id>`) into `config/app` → `exports.driveFolderId`.
+3. « Exporter les retenues vers Drive » on `/admin/videos` copies each selected video as `{mission}_{participantNumber}_{firstName}.mp4` and appends it to the spreadsheet **Index rushes An 68** created inside the folder. Re-running only exports videos not yet marked `exportedAt`.
+
+**Alerts to the war room**
+- The `watchdog` function runs every 5 minutes and fires (once per hour per check, with a recovery message) on: moderation backlog above 2 000, moderation p95 above 2 h over the last two hours, snapshot older than 10 minutes. Each alert is a Cloud Logging error line starting with `[alert]` and, if `config/app` → `exports.alertWebhook` holds a Slack-compatible incoming-webhook URL, a message in that channel.
+- Two alerts stay in Cloud Monitoring: Monitoring → Alerting → create a policy on the Cloud Run metric *Request count* filtered on response class 5xx / total above 2 % over 5 minutes, and Billing → Budgets & alerts → a 500 USD budget on the project with email notification to the on-call engineers. Point both notification channels at the war-room channel.
 
 ## Checklist
 - [ ] Blaze plan and budget alert

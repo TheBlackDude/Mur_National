@@ -23,6 +23,8 @@ service cloud.firestore {
       allow read: if isStaff();
       allow write: if hasRole('editor') || hasRole('admin');
     }
+    // Mission tokens are only ever read by the callables (Admin SDK).
+    match /missionTokens/{code} { allow read, write: if false; }
     match /missions/{code} {
       // Token is checked server-side; the public doc only exposes the name and country.
       allow read: if true;

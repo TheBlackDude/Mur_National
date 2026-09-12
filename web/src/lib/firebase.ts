@@ -69,3 +69,14 @@ export type ModerateReq = { id: string; action: ModerateAction; reason?: RejectR
 export const moderate = call<ModerateReq, { ok: true }>('moderate')
 
 export const report = call<{ id: string; reason: string }, { ok: true }>('report')
+
+// D6 callables (functions/src/video.ts, exports.ts)
+export type MissionInfo = { code: string; name: string; country: string; contact?: string | null }
+export const missionInfo = call<{ mission: string; token: string }, MissionInfo>('missionInfo')
+export type SubmitVideoReq = { path: string; mission: string; token: string; durationSec: number; firstName?: string; city?: string; consent: { film: true } }
+export const submitVideo = call<SubmitVideoReq, { id: string; participantNumber: number }>('submitVideo')
+export type SelectVideoReq = { id: string; selected?: boolean; tags?: string[]; notes?: string }
+export const selectVideo = call<SelectVideoReq, { ok: true }>('selectVideo')
+export type ExportDailyRes = { date: string; national: number; newToday: number; prefecturesLit: number; countriesLit: number; videosSelected: number; backlog: number; sheet: boolean; csvPath: string }
+export const exportDailyNow = call<Record<string, never>, ExportDailyRes>('exportDailyNow')
+export const exportSelected = call<Record<string, never>, { exported: number; skipped: number; folder: string | null }>('exportSelected')

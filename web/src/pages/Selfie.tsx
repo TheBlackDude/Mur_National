@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { ref as sref, uploadBytes } from 'firebase/storage'
-import { ensureAnonymousUser, storage, submitContribution } from '../lib/firebase'
+import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, type User } from 'firebase/auth'
+import { auth, ensureAnonymousUser, storage, submitContribution } from '../lib/firebase'
 import { compose, drawSquare, fileToBitmap, scaled, shareOrDownload, souvenirCard, toJpegUnder } from '../lib/image'
 import { FRAME_IDS, SITE_DOMAIN, type FrameId } from '../lib/frames'
 import { useI18n } from '../lib/i18n'
@@ -32,7 +33,13 @@ export default function Selfie() {
   const [result, setResult] = useState<{ id: string; participantNumber: number } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => { ensureAnonymousUser().catch(() => {}) }, [])
+  // Kiosk tablets sign in with a staff account (the callable only honours kiosk=1 for staff tokens); citizens stay anonymous.
+  const [staff, setStaff] = useState<User | null>(null)
+  const [nextIn, setNextIn] = useState<number | null>(null)
+  useEffect(() => {
+    if (!kiosk) { ensureAnonymousUser().catch(() => {}); return }
+    return onAuthStateChanged(auth, (u) => setStaff(u && !u.isAnonymous ? u : null))
+  }, [kiosk])
 
   // Steps 2–4 push a history entry so the phone's back button moves one step down instead of leaving the studio.
   function goTo(next: Step) {
@@ -109,17 +116,35 @@ export default function Selfie() {
     await shareOrDownload(blob, `fier-guineen-${result.participantNumber}.jpg`, `#FierDetreGuineen · Participant n°${result.participantNumber} · ${SITE_DOMAIN}`)
   }
 
-  function reset() { setStep(1); setPhoto(null); setComposed(null); setPreview(''); setResult(null); setConsent(false); setMinor(false) }
+  function reset() { setStep(1); setPhoto(null); setComposed(null); setPreview(''); setResult(null); setConsent(false); setMinor(false); setNextIn(null) }
+
+  // Kiosk: show the number big for 15 s, then hand the tablet to the next person.
+  useEffect(() => {
+    if (!kiosk || step !== 4) { setNextIn(null); return }
+    setNextIn(15)
+    const id = window.setInterval(() => setNextIn((n) => (n === null ? null : n - 1)), 1000)
+    const done = window.setTimeout(reset, 15_000)
+    return () => { clearInterval(id); clearTimeout(done) }
+  }, [kiosk, step]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const steps = useMemo(() => [t('selfie.step1'), t('selfie.step2'), t('selfie.step3'), t('selfie.step4')], [t])
 
+  if (kiosk && !staff) return (
+    <div className="mx-auto max-w-sm card p-8 text-center grid gap-4">
+      <p className="label">{t('selfie.kioskTitle')}</p>
+      <p className="text-muted">{t('selfie.kioskSignin')}</p>
+      <button className="btn-primary h-14" onClick={() => signInWithPopup(auth, new GoogleAuthProvider())}>Google</button>
+    </div>
+  )
+
   return (
-    <div className="mx-auto max-w-md">
+    <div className={kiosk ? 'mx-auto max-w-3xl [&_button]:min-h-14 [&_select]:min-h-14 [&_input:not([type=checkbox])]:min-h-14 [&_input[type=checkbox]]:w-6 [&_input[type=checkbox]]:h-6' : 'mx-auto max-w-md'}>
       <ol className="flex gap-1.5 mb-5" aria-label="progress">
         {steps.map((s, i) => <li key={s} className={`flex-1 h-1.5 rounded-full ${i < step ? 'bg-primary' : 'bg-rule'}`} title={s} />)}
       </ol>
-      <h1 className="text-2xl font-bold">{steps[step - 1]}</h1>
+      <h1 className="text-2xl font-bold">{steps[step - 1]}{kiosk && <span className="ml-3 text-xs font-medium text-muted align-middle">{t('selfie.kioskTitle')} · {staff?.email}</span>}</h1>
 
+      <div className={kiosk && step >= 2 && step <= 3 ? 'md:grid md:grid-cols-2 md:gap-6 md:items-start' : ''}>
       {step === 1 && (
         <div className="card p-6 mt-4 grid gap-3">
           <input ref={fileRef} type="file" accept="image/*" capture="user" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
@@ -185,12 +210,14 @@ export default function Selfie() {
         <div className="card p-6 mt-4 text-center grid gap-3">
           {preview && <img src={preview} alt="" className="w-full rounded-[var(--radius-btn)]" />}
           <p className="text-muted">{t('selfie.done')}</p>
-          <p className="text-5xl font-bold text-primary tabular">{result.participantNumber.toLocaleString('fr-FR')}</p>
+          <p className={`font-bold text-primary tabular leading-none ${kiosk ? 'text-[96px]' : 'text-5xl'}`}>{result.participantNumber.toLocaleString('fr-FR')}</p>
           <p className="text-sm text-muted">{t('selfie.pending')}</p>
-          <button className="btn-primary" onClick={share}>{t('selfie.share')}</button>
+          {nextIn !== null && <p className="text-sm text-muted tabular" role="status">{t('selfie.kioskNext', { s: nextIn })}</p>}
+          {!kiosk && <button className="btn-primary" onClick={share}>{t('selfie.share')}</button>}
           <button className="btn-outline" onClick={reset}>{t('selfie.again')}</button>
         </div>
       )}
+      </div>
     </div>
   )
 }

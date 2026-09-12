@@ -1,0 +1,11 @@
+{
+  "name": "mur-national-scripts",
+  "private": true,
+  "type": "module",
+  "description": "Operational scripts: seed missions, render QR posters. Run from the repo root.",
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "pdfkit": "^0.15.0",
+    "qrcode": "^1.5.4"
+  }
+}

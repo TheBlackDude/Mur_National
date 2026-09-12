@@ -22,6 +22,10 @@
     "stats": {
       ".read": "auth != null && (auth.token.moderator == true || auth.token.editor == true || auth.token.admin == true || auth.token.maeiage == true)",
       ".write": false
+    },
+    "alerts": {
+      ".read": false,
+      ".write": false
     }
   }
 }

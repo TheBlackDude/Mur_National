@@ -9,3 +9,7 @@ functions/lib/
 firebase-debug.log
 web/dev-dist/
 web/tsconfig.tsbuildinfo
+
+# scripts/ tooling and generated secrets/posters
+scripts/node_modules/
+scripts/out/
