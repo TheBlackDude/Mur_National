@@ -63,7 +63,9 @@ export type SubmitReq = { path: string; frame: 'A' | 'B' | 'C'; prefecture?: str
 export type SubmitRes = { id: string; participantNumber: number }
 export const submitContribution = call<SubmitReq, SubmitRes>('submitContribution')
 
-export type ModerateReq = { id: string; action: 'approve' | 'reject' | 'feature' | 'unfeature' | 'review'; reason?: string; block?: boolean }
+export type RejectReason = 'inappropriate' | 'not_person' | 'duplicate' | 'minor' | 'other'
+export type ModerateAction = 'approve' | 'reject' | 'review' | 'feature' | 'unfeature' | 'personality' | 'unpersonality' | 'block' | 'unblock'
+export type ModerateReq = { id: string; action: ModerateAction; reason?: RejectReason; block?: boolean }
 export const moderate = call<ModerateReq, { ok: true }>('moderate')
 
 export const report = call<{ id: string; reason: string }, { ok: true }>('report')

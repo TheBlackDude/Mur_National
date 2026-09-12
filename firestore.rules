@@ -9,13 +9,19 @@ service cloud.firestore {
     match /contributions/{id} {
       allow read: if resource.data.status == 'approved' || isStaff();
       allow write: if false;
+      // Per-item moderation audit trail, written by the moderate callable only.
+      match /history/{h} {
+        allow read: if isStaff();
+        allow write: if false;
+      }
     }
     match /reports/{id} {
       allow read: if isStaff();
       allow write: if false;
     }
     match /blocklist/{id} {
-      allow read, write: if hasRole('editor') || hasRole('admin');
+      allow read: if isStaff();
+      allow write: if hasRole('editor') || hasRole('admin');
     }
     match /missions/{code} {
       // Token is checked server-side; the public doc only exposes the name and country.

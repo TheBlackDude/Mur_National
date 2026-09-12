@@ -1,11 +1,24 @@
 import { onObjectFinalized } from 'firebase-functions/v2/storage'
+import { logger } from 'firebase-functions/v2'
+import { getApp } from 'firebase-admin/app'
+import { Timestamp } from 'firebase-admin/firestore'
 import sharp from 'sharp'
 import { bucket, db, FieldValue } from './lib.js'
+import { approveContribution } from './moderate.js'
+
+type Likelihood = 'UNKNOWN' | 'VERY_UNLIKELY' | 'UNLIKELY' | 'POSSIBLE' | 'LIKELY' | 'VERY_LIKELY'
+export type SafeSearch = { adult: Likelihood; spoof: Likelihood; medical: Likelihood; violence: Likelihood; racy: Likelihood }
+type ReviewReason = 'duplicate' | 'safesearch' | null
+
+const FLAGGED: Likelihood[] = ['LIKELY', 'VERY_LIKELY']
+const DUPLICATE_WINDOW_MS = 48 * 3_600_000
 
 /**
  * Runs after every upload under uploads/{uid}/. Produces the thumbnail and the 1080 px rendition
- * in staging paths, computes a perceptual hash and (D3) a Vision SafeSearch verdict, and writes
- * them on the matching contribution document. Files only become public at approval (moderate.ts).
+ * in staging paths, computes a perceptual hash and a Vision SafeSearch verdict, and writes them on
+ * the matching contribution document. Routing (S6.7): duplicates and adult/violence hits go to L2
+ * review, clean kiosk items get the L1 fast lane, and nothing is auto-approved unless
+ * config/app.kioskAutoApprove is on. Files only become public at approval (moderate.ts).
  */
 export const onPhotoUploaded = onObjectFinalized({ memory: '1GiB', timeoutSeconds: 60 }, async (event) => {
   const path = event.data.name
@@ -25,32 +38,92 @@ export const onPhotoUploaded = onObjectFinalized({ memory: '1GiB', timeoutSecond
     bucket().file(`staging/public/${id}.jpg`).save(rendition, { contentType: 'image/jpeg' }),
   ])
 
-  const phash = await averageHash(buf)
-  // Near-duplicate check against the last 48 h: exact-hash match is enough for the first pass;
-  // D3 replaces this with a Hamming-distance scan over a small in-memory window.
-  const dup = await db.collection('contributions').where('phash', '==', phash).limit(1).get()
-  const duplicateOf = dup.empty ? null : dup.docs[0].id
-
-  // TODO(D3): Vision SafeSearch → { adult, violence, racy }; route LIKELY/VERY_LIKELY to status 'review'.
-  const safeSearch = null
+  const config = await appConfig()
+  const [phash, safeSearch] = await Promise.all([
+    averageHash(buf),
+    config.safeSearch ? safeSearchDetect(rendition) : Promise.resolve(null),
+  ])
 
   // The doc may not exist yet if the callable is still running: retry briefly.
   const q = db.collection('contributions').where('files.original', '==', path).limit(1)
   for (let i = 0; i < 5; i++) {
     const snap = await q.get()
     if (!snap.empty) {
-      await snap.docs[0].ref.update({
-        phash, duplicateOf, safeSearch,
+      const doc = snap.docs[0]
+      const c = doc.data()
+
+      const duplicateOf = await findDuplicate(phash, doc.id)
+      const flagged = safeSearch !== null && (FLAGGED.includes(safeSearch.adult) || FLAGGED.includes(safeSearch.violence))
+      const clean = safeSearch !== null && !FLAGGED.includes(safeSearch.adult) && !FLAGGED.includes(safeSearch.violence) && !FLAGGED.includes(safeSearch.racy)
+      const reviewReason: ReviewReason = duplicateOf ? 'duplicate' : flagged ? 'safesearch' : null
+      const kiosk = c.kiosk === true
+      const priority = kiosk && clean ? 1 : 0
+
+      await doc.ref.update({
+        phash, duplicateOf, safeSearch, reviewReason, priority,
         'files.thumb': `staging/thumbs/${id}.jpg`,
         'files.public': `staging/public/${id}.jpg`,
-        ...(duplicateOf ? { status: 'review' } : {}),
+        ...(reviewReason && c.status === 'pending' ? { status: 'review' } : {}),
         processedAt: FieldValue.serverTimestamp(),
       })
+
+      if (config.kioskAutoApprove && kiosk && clean && !duplicateOf && c.status === 'pending') {
+        const fresh = (await doc.ref.get()).data()!
+        await approveContribution(doc.ref, fresh, { by: 'system', byEmail: null })
+      }
       return
     }
     await new Promise((r) => setTimeout(r, 1500))
   }
+  logger.warn('onPhotoUploaded: no contribution found for upload', { path })
 })
+
+/** Feature flags editors can flip without a deploy. Defaults are the safe ones. */
+async function appConfig(): Promise<{ safeSearch: boolean; kioskAutoApprove: boolean }> {
+  try {
+    const d = (await db.doc('config/app').get()).data() ?? {}
+    return { safeSearch: d.safeSearch !== false, kioskAutoApprove: d.kioskAutoApprove === true }
+  } catch (e) {
+    logger.warn('config/app unreadable, using defaults', e)
+    return { safeSearch: true, kioskAutoApprove: false }
+  }
+}
+
+/** Vision SafeSearch on the 1080 rendition. Any failure returns null so the pipeline never blocks on it. */
+async function safeSearchDetect(image: Buffer): Promise<SafeSearch | null> {
+  try {
+    const cred = getApp().options.credential
+    if (!cred) throw new Error('no credential on the admin app')
+    const { access_token } = await cred.getAccessToken()
+    const res = await fetch('https://vision.googleapis.com/v1/images:annotate', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${access_token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requests: [{ image: { content: image.toString('base64') }, features: [{ type: 'SAFE_SEARCH_DETECTION' }] }] }),
+    })
+    if (!res.ok) throw new Error(`Vision ${res.status}: ${(await res.text()).slice(0, 300)}`)
+    const body = (await res.json()) as { responses?: { safeSearchAnnotation?: Partial<SafeSearch>; error?: { message?: string } }[] }
+    const r = body.responses?.[0]
+    if (!r || r.error || !r.safeSearchAnnotation) throw new Error(r?.error?.message ?? 'empty SafeSearch response')
+    const a = r.safeSearchAnnotation
+    return { adult: a.adult ?? 'UNKNOWN', spoof: a.spoof ?? 'UNKNOWN', medical: a.medical ?? 'UNKNOWN', violence: a.violence ?? 'UNKNOWN', racy: a.racy ?? 'UNKNOWN' }
+  } catch (e) {
+    logger.warn('SafeSearch failed, storing null', { error: String(e) })
+    return null
+  }
+}
+
+/** Exact-hash match among the last 48 h, excluding the item itself. Index: (phash asc, createdAt desc). */
+async function findDuplicate(phash: string, selfId: string): Promise<string | null> {
+  const since = Timestamp.fromMillis(Date.now() - DUPLICATE_WINDOW_MS)
+  const snap = await db.collection('contributions')
+    .where('phash', '==', phash)
+    .where('createdAt', '>', since)
+    .orderBy('createdAt', 'desc')
+    .limit(2)
+    .get()
+  const hit = snap.docs.find((d) => d.id !== selfId)
+  return hit ? hit.id : null
+}
 
 /** 8×8 average hash: 64-bit hex string. Good enough to catch re-uploads of the same photo. */
 async function averageHash(buf: Buffer): Promise<string> {

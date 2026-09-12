@@ -34,6 +34,21 @@ export default function Selfie() {
 
   useEffect(() => { ensureAnonymousUser().catch(() => {}) }, [])
 
+  // Steps 2–4 push a history entry so the phone's back button moves one step down instead of leaving the studio.
+  function goTo(next: Step) {
+    if (next > 1) history.pushState({ studioStep: next }, '')
+    setStep(next)
+  }
+  useEffect(() => {
+    const onPop = (e: PopStateEvent) => {
+      const target = (e.state as { studioStep?: Step } | null)?.studioStep
+      setStep((cur) => (cur > 1 ? (target && target < cur ? target : ((cur - 1) as Step)) : cur))
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
+  const back = () => history.back()
+
   // Re-compose whenever the photo or frame changes.
   useEffect(() => {
     let alive = true
@@ -57,7 +72,7 @@ export default function Selfie() {
     setError('')
     const bmp = await fileToBitmap(file)
     setPhoto(drawSquare(bmp))
-    setStep(2)
+    goTo(2)
   }
 
   const canPublish = consent && composed && (mode === 'guinea' ? !!prefecture : !!country)
@@ -80,10 +95,10 @@ export default function Selfie() {
         consent: { public: true, minorSupervised: kiosk && minor },
       })
       setResult(res)
-      setStep(4)
+      goTo(4)
     } catch (e: unknown) {
       const code = (e as { code?: string }).code ?? ''
-      setError(code.includes('resource-exhausted') ? t('selfie.ratelimit') : t('selfie.error'))
+      setError(code.includes('resource-exhausted') ? t('selfie.ratelimit') : code.includes('permission-denied') ? t('selfie.blocked') : t('selfie.error'))
     } finally { setBusy(false) }
   }
 
@@ -130,7 +145,10 @@ export default function Selfie() {
               </button>
             ))}
           </div>
-          <button className="btn-primary" onClick={() => setStep(3)}>Suivant →</button>
+          <div className="grid grid-cols-[auto_1fr] gap-2">
+            <button className="btn-outline px-4" onClick={back}>← {t('selfie.back')}</button>
+            <button className="btn-primary" onClick={() => goTo(3)}>Suivant →</button>
+          </div>
         </div>
       )}
 
@@ -156,7 +174,10 @@ export default function Selfie() {
           <label className="flex gap-3 items-start text-sm"><input type="checkbox" className="mt-1" checked={consent} onChange={(e) => setConsent(e.target.checked)} />{t('selfie.consent')}</label>
           {kiosk && <label className="flex gap-3 items-start text-sm"><input type="checkbox" className="mt-1" checked={minor} onChange={(e) => setMinor(e.target.checked)} />{t('selfie.minor')}</label>}
           {error && <p className="text-danger text-sm" role="alert">{error}</p>}
-          <button className="btn-gold" disabled={!canPublish || busy} onClick={publish}>{busy ? t('selfie.uploading') : t('selfie.publish')}</button>
+          <div className="grid grid-cols-[auto_1fr] gap-2">
+            <button className="btn-outline px-4" disabled={busy} onClick={back}>← {t('selfie.back')}</button>
+            <button className="btn-gold" disabled={!canPublish || busy} onClick={publish}>{busy ? t('selfie.uploading') : t('selfie.publish')}</button>
+          </div>
         </div>
       )}
 

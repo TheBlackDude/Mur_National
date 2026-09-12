@@ -1,7 +1,23 @@
 {
   "rules": {
-    "counters": { ".read": true, ".write": false },
-    "seq": { ".read": false, ".write": false },
-    "rate": { ".read": false, ".write": false }
+    "counters": {
+      ".read": true,
+      ".write": false
+    },
+    "seq": {
+      ".read": false,
+      ".write": false
+    },
+    "rate": {
+      ".read": false,
+      ".write": false
+    },
+    "locks": {
+      "$id": {
+        ".read": "auth != null && (auth.token.moderator == true || auth.token.editor == true || auth.token.admin == true)",
+        ".write": "auth != null && (auth.token.moderator == true || auth.token.editor == true || auth.token.admin == true)",
+        ".validate": "newData.hasChildren(['uid','at']) || !newData.exists()"
+      }
+    }
   }
 }

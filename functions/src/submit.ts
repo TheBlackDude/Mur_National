@@ -51,6 +51,8 @@ export const submitContribution = onCall<Req>(async (req) => {
     phash: null,
     safeSearch: null,
     duplicateOf: null,
+    reviewReason: null,
+    priority: 0,
     featured: false,
     personality: false,
     reports: 0,
