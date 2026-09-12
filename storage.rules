@@ -18,6 +18,8 @@ service firebase.storage {
                    && request.resource.size < 150 * 1024 * 1024;
       allow read: if isStaff();
     }
+    // Renditions waiting for moderation: staff preview them from /admin; approval copies them to public/ and thumbs/.
+    match /staging/{kind}/{file} { allow read: if isStaff(); allow write: if false; }
     match /public/{file} { allow read: if true; allow write: if false; }
     match /thumbs/{file} { allow read: if true; allow write: if false; }
     match /snapshot/{file} { allow read: if true; allow write: if false; }

@@ -51,6 +51,8 @@
   "admin.reject": "Reject",
   "admin.forbidden": "This account has no moderation role.",
   "admin.signout": "Sign out",
+  "admin.error": "The queue could not be loaded:",
+  "admin.empty": "Nothing waiting.",
   "footer.legal": "Legal notice",
   "footer.privacy": "Personal data",
   "footer.by": "Designed and built by MuduPay"
