@@ -23,8 +23,8 @@ const mm = (n) => n * 72 / 25.4
 const A4 = { w: mm(210), h: mm(297) }
 
 const T = {
-  fr: { title: 'Fier d’être Guinéen', sub: 'Mur National · An 68', invite: 'Scannez pour envoyer votre vidéo', footer: 'Une vidéo de 60 à 90 secondes pour le film de l’An 68', by: 'Une initiative de la Présidence de la République · Semaine de l’Indépendance, 25 sept. – 2 oct. 2026' },
-  en: { title: 'Proud to be Guinean', sub: 'National Wall · Year 68', invite: 'Scan to send your video', footer: 'A 60 to 90 second video for the Year 68 film', by: 'An initiative of the Presidency of the Republic · Independence Week, 25 Sept – 2 Oct 2026' },
+  fr: { title: 'Fier d’être Guinéen', sub: 'Mur National · An 68', invite: 'Scannez pour envoyer votre vidéo', footer: 'Une vidéo de 60 à 90 secondes pour le film de l’An 68', by: 'Une initiative de la Présidence de la République · Semaine de la Fête Nationale, 25 sept. – 2 oct. 2026' },
+  en: { title: 'Proud to be Guinean', sub: 'National Wall · Year 68', invite: 'Scan to send your video', footer: 'A 60 to 90 second video for the Year 68 film', by: 'An initiative of the Presidency of the Republic · National Day Week, 25 Sept – 2 Oct 2026' },
 }
 
 function parseCsv(text) {

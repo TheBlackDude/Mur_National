@@ -1,6 +1,6 @@
 # Fier d'être Guinéen — Mur National
 
-National wall of pride for the Semaine de l'Indépendance An 68 (25 Sept – 2 Oct 2026).
+National wall of pride for the Semaine de la Fête Nationale An 68 (25 Sept – 2 Oct 2026).
 Docs: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Layout
