@@ -1,5 +1,5 @@
 /** Client-side image pipeline: resize, compose the official frame, watermark, export JPEG. */
-import { drawFrame, ensureFonts, SITE_DOMAIN, type FrameId, type Lang, type Watermark } from './frames'
+import { drawFrame, drawLogoChip, ensureFonts, loadLogo, SITE_DOMAIN, type FrameId, type Lang, type Watermark } from './frames'
 
 export const MAX_EDGE = 1600
 export const JPEG_QUALITY = 0.82
@@ -51,7 +51,7 @@ export async function compose(photo: HTMLCanvasElement, frameId: FrameId, lang: 
   out.width = out.height = photo.width
   const ctx = out.getContext('2d')!
   const w = out.width
-  await ensureFonts()
+  const [, logo] = await Promise.all([ensureFonts(), loadLogo()])
   let wm: Watermark
   try {
     const frame = await loadFrame(frameId)
@@ -59,7 +59,7 @@ export async function compose(photo: HTMLCanvasElement, frameId: FrameId, lang: 
     ctx.drawImage(frame, 0, 0, w, w)
     wm = { x: w * 0.06, y: w * 0.955, size: w * 0.022, align: 'left', color: 'rgba(255,255,255,.85)' }
   } catch {
-    wm = drawFrame(ctx, photo, w, frameId, lang)
+    wm = drawFrame(ctx, photo, w, frameId, lang, logo)
   }
   ctx.font = `500 ${Math.round(wm.size)}px "DM Sans", sans-serif`
   ctx.fillStyle = wm.color
@@ -77,13 +77,14 @@ export function scaled(src: HTMLCanvasElement, size: number): HTMLCanvasElement 
 }
 
 /** Souvenir card: composed photo + participant number band. */
-export function souvenirCard(composed: HTMLCanvasElement, participantNumber: number, lang: 'fr' | 'en'): HTMLCanvasElement {
+export function souvenirCard(composed: HTMLCanvasElement, participantNumber: number, lang: 'fr' | 'en', logo: HTMLImageElement | null = null): HTMLCanvasElement {
   const w = composed.width, band = Math.round(w * 0.22)
   const c = document.createElement('canvas')
   c.width = w; c.height = w + band
   const ctx = c.getContext('2d')!
   ctx.fillStyle = '#3273AC'; ctx.fillRect(0, 0, w, c.height)
   ctx.drawImage(composed, 0, 0)
+  drawLogoChip(ctx, logo, w * 0.05, w + band * 0.15, band * 0.7)
   ctx.fillStyle = '#FFFFFF'
   ctx.font = `500 ${Math.round(w * 0.035)}px "DM Sans", sans-serif`
   ctx.textAlign = 'center'

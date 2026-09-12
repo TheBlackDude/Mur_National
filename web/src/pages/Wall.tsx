@@ -52,7 +52,9 @@ export default function Wall() {
   const preLaunch = !!cfg.launchAt && Date.now() < cfg.launchAt.getTime() && params.get('apercu') !== '1'
   const degraded = cfg.degraded || fsFailed
   const { snap, ageMin } = useSnapshot(120_000, degraded)
-  const personalities = preLaunch || params.get('tab') === 'personnalites'
+  const personalities = params.get('tab') === 'personnalites'
+  // Before launch only seeded content shows: personalities (plus featured on the main tab).
+  const seededOnly = preLaunch || personalities
 
   const [featured, setFeatured] = useState<Item[]>([])
   const [items, setItems] = useState<Item[]>([])
@@ -78,8 +80,8 @@ export default function Wall() {
     try {
       const clauses = [
         where('status', '==', 'approved'),
-        ...(personalities ? [where('personality', '==', true)] : []),
-        ...(filter && !personalities ? [where(filter.field, '==', filter.value)] : []),
+        ...(seededOnly ? [where('personality', '==', true)] : []),
+        ...(filter && !seededOnly ? [where(filter.field, '==', filter.value)] : []),
         orderBy('createdAt', 'desc'),
         limit(preLaunch ? 60 : PAGE),
       ]
@@ -93,7 +95,7 @@ export default function Wall() {
       console.warn('[wall] firestore, falling back to the snapshot', e)
       setFsFailed(true)
     } finally { setLoading(false) }
-  }, [filter, personalities, preLaunch])
+  }, [filter, seededOnly, preLaunch])
 
   // Reload on filter/tab change; on the unfiltered main tab, pin featured tiles first.
   useEffect(() => {
@@ -103,7 +105,7 @@ export default function Wall() {
     ;(async () => {
       let pinned: Item[] = []
       // Main tab pins featured tiles first; before launch the seeded content is personality OR featured, featured first.
-      if ((!filter && !personalities) || preLaunch) {
+      if (!filter && !personalities) {
         try {
           const snap = await getDocs(query(collection(db, 'contributions'), where('status', '==', 'approved'), where('featured', '==', true), orderBy('createdAt', 'desc'), limit(preLaunch ? 60 : FEATURED_MAX)))
           pinned = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Item, 'id'>) }))
@@ -172,10 +174,10 @@ export default function Wall() {
       )}
       <div className="flex flex-wrap items-end gap-3 justify-between">
         <h1 className="text-2xl font-bold">{t('wall.title')}</h1>
-        {!preLaunch && <div className="flex gap-2" role="tablist">
+        <div className="flex gap-2" role="tablist">
           <button role="tab" aria-selected={!personalities} className={tabClass(!personalities)} onClick={() => setTab(false)}>{t('wall.filter.all')}</button>
           <button role="tab" aria-selected={personalities} className={tabClass(personalities)} onClick={() => setTab(true)}>{t('wall.tab.personalities')}</button>
-        </div>}
+        </div>
       </div>
       {degraded && (
         <p className="mt-3 text-sm text-muted" role="status">
@@ -183,7 +185,7 @@ export default function Wall() {
         </p>
       )}
 
-      {!personalities && (
+      {!seededOnly && (
         <div className="flex flex-wrap gap-2 mt-4">
           <fieldset disabled={degraded} className="contents">
           <select className="input h-10 w-auto" aria-label={t('wall.filter.region')} value={filter?.field === 'region' ? filter.value : ''} onChange={(e) => setFilter('region', e.target.value)}>

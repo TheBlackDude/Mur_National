@@ -16,6 +16,8 @@ const args = process.argv.slice(2)
 const BASE = (args.find((a) => a.startsWith('--base='))?.slice(7) ?? 'https://theblackdude.github.io/Mur_National').replace(/\/$/, '')
 const ONLY = args.find((a) => a.startsWith('--only='))?.slice(7).split(',').map((s) => s.trim().toUpperCase())
 
+const LOGO_PATH = new URL('../web/public/frames/logo-68.png', import.meta.url).pathname
+const LOGO = (await import('node:fs')).existsSync(LOGO_PATH) ? LOGO_PATH : null
 const C = { primary: '#3273AC', gold: '#EBAB58', ink: '#121826', bg: '#F5F7FA', muted: '#5F6B7A', red: '#CE1126', yellow: '#FCD116', green: '#009460', white: '#FFFFFF' }
 const mm = (n) => n * 72 / 25.4
 const A4 = { w: mm(210), h: mm(297) }
@@ -64,8 +66,11 @@ async function poster(m, lang, file) {
   doc.fillColor(C.muted).font('Helvetica').fontSize(14).text(t.sub, mm(18), mm(40), { width: A4.w - mm(36) })
 
   // Gold 68 mark, top right
-  doc.circle(A4.w - mm(30), mm(34), mm(11)).fill(C.gold)
-  doc.fillColor(C.ink).font('Helvetica-Bold').fontSize(30).text('68', A4.w - mm(41), mm(28.5), { width: mm(22), align: 'center' })
+  if (LOGO) doc.image(LOGO, A4.w - mm(44), mm(20), { width: mm(28), height: mm(28) })
+  else {
+    doc.circle(A4.w - mm(30), mm(34), mm(11)).fill(C.gold)
+    doc.fillColor(C.ink).font('Helvetica-Bold').fontSize(30).text('68', A4.w - mm(41), mm(28.5), { width: mm(22), align: 'center' })
+  }
 
   // Mission block
   doc.fillColor(C.ink).font('Helvetica-Bold').fontSize(20).text(m.name, mm(18), mm(60), { width: A4.w - mm(36) })

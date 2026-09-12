@@ -11,7 +11,7 @@ export default function Layout() {
       <header className="bg-surface border-b border-rule">
         <div className="mx-auto max-w-5xl px-4 h-16 flex items-center gap-4">
           <Link to="/" className="flex items-center gap-2.5 mr-auto">
-            <span className="w-8 h-8 rounded-full bg-primary text-white grid place-items-center font-bold text-sm">68</span>
+            <img src={`${import.meta.env.BASE_URL}logo-68.png`} alt="" className="w-9 h-9 object-contain" />
             <span className="font-bold leading-tight">{t('app.name')}<span className="block text-[11px] font-medium text-muted">{t('app.tagline')}</span></span>
           </Link>
           <nav className="hidden sm:flex gap-1">

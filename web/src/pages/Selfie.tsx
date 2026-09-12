@@ -5,7 +5,7 @@ import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, type User } fr
 import { auth, ensureAnonymousUser, missionInfo, storage, submitContribution, type MissionInfo } from '../lib/firebase'
 import { keepAwake, resumableUpload, type UploadHandle } from '../lib/upload'
 import { compose, drawSquare, fileToBitmap, posterFromVideo, scaled, shareOrDownload, souvenirCard, toJpegUnder } from '../lib/image'
-import { FRAME_IDS, SITE_DOMAIN, type FrameId } from '../lib/frames'
+import { FRAME_IDS, SITE_DOMAIN, loadLogo, type FrameId } from '../lib/frames'
 import { readVideoDuration } from '../lib/video'
 import { useI18n } from '../lib/i18n'
 import VideoRecorder from '../components/VideoRecorder'
@@ -163,8 +163,8 @@ export default function Selfie() {
       const path = `uploads/${user.uid}/${id}.jpg`
       let videoPath: string | undefined
       if (clip) {
-        // Poster first (small), then the clip through the resumable uploader with progress and pause.
-        await resumableUpload({ path, file: jpeg, contentType: 'image/jpeg' }).done
+        // Clip first (long, resumable, with progress), poster last: the poster triggers server processing,
+        // which must find the contribution document within seconds of the poster landing.
         videoPath = `uploads/${user.uid}/${id}.${clip.ext}`
         const file = Object.assign(clip.blob.slice(0, clip.blob.size, clip.blob.type), { name: clip.name, lastModified: clip.lastModified })
         const h = resumableUpload({
@@ -175,6 +175,7 @@ export default function Selfie() {
         uploadRef.current = h
         await h.done
         uploadRef.current = null
+        await resumableUpload({ path, file: jpeg, contentType: 'image/jpeg' }).done
       } else {
         await uploadBytes(sref(storage, path), jpeg, { contentType: 'image/jpeg' })
       }
@@ -204,7 +205,7 @@ export default function Selfie() {
 
   async function share() {
     if (!composed || !result) return
-    const card = souvenirCard(composed, result.participantNumber, lang)
+    const card = souvenirCard(composed, result.participantNumber, lang, await loadLogo())
     const blob = await toJpegUnder(card, 600_000)
     await shareOrDownload(blob, `fier-guineen-${result.participantNumber}.jpg`, `#FierDetreGuineen · Participant n°${result.participantNumber} · ${SITE_DOMAIN}`)
   }

@@ -1,6 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https'
 import { timingSafeEqual } from 'node:crypto'
 import { bucket, checkRate, db, FieldValue, isBlocked, nextParticipantNumber, requireAuth } from './lib.js'
+import { finishIfAlreadyProcessed } from './onPhotoUploaded.js'
 
 type Req = {
   path: string
@@ -113,5 +114,7 @@ export const submitContribution = onCall<Req>(async (req) => {
     reports: 0,
     createdAt: FieldValue.serverTimestamp(),
   })
+  // If the poster was processed before this doc existed, complete the processing now (never blocks the answer on failure).
+  await finishIfAlreadyProcessed(ref, d.path).catch((e) => console.warn('finishIfAlreadyProcessed', e))
   return { id: ref.id, participantNumber }
 })

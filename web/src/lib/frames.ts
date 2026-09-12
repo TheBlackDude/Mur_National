@@ -14,6 +14,36 @@ const GN = { red: '#CE1126', yellow: '#FCD116', green: '#009460' }
 const MP = { gold: '#EBAB58', ink: '#121826', muted: '#5F6B7A', white: '#FFFFFF' }
 const FONT = '"DM Sans", system-ui, -apple-system, sans-serif'
 
+/** Official An 68 logo (DCI). Its inner figures are white, so it always sits on a white chip. */
+let logoPromise: Promise<HTMLImageElement | null> | null = null
+export function loadLogo(): Promise<HTMLImageElement | null> {
+  if (!logoPromise) {
+    logoPromise = new Promise((resolve) => {
+      const img = new Image()
+      img.onload = () => resolve(img)
+      img.onerror = () => resolve(null)
+      img.src = `${import.meta.env.BASE_URL}frames/logo-68.png`
+    })
+  }
+  return logoPromise
+}
+
+/** White rounded chip with the logo inside; `size` is the chip's side. Falls back to a gold "68" if the logo is missing. */
+export function drawLogoChip(ctx: CanvasRenderingContext2D, logo: HTMLImageElement | null, x: number, y: number, size: number) {
+  roundedPath(ctx, x, y, size, size, size * 0.18)
+  ctx.fillStyle = MP.white
+  ctx.fill()
+  if (logo) {
+    const pad = size * 0.1
+    ctx.drawImage(logo, x + pad, y + pad, size - 2 * pad, size - 2 * pad)
+  } else {
+    ctx.fillStyle = MP.gold
+    ctx.textAlign = 'center'
+    ctx.font = font(700, size * 0.55)
+    ctx.fillText('68', x + size / 2, y + size * 0.7)
+  }
+}
+
 /** Where compose() should stamp the domain watermark for this frame. */
 export type Watermark = { x: number; y: number; size: number; align: CanvasTextAlign; color: string }
 
@@ -47,7 +77,7 @@ function flag(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h:
 }
 
 /** A · Drapeau — full-bleed photo, tricolour hairline on top, ink band with the flag, the slogan and a big gold 68. */
-function drawA(ctx: CanvasRenderingContext2D, photo: HTMLCanvasElement, w: number, lang: Lang): Watermark {
+function drawA(ctx: CanvasRenderingContext2D, photo: HTMLCanvasElement, w: number, lang: Lang, logo: HTMLImageElement | null): Watermark {
   const u = w / 100
   ctx.drawImage(photo, 0, 0, w, w)
   flag(ctx, 0, 0, w, 1.4 * u)
@@ -65,16 +95,13 @@ function drawA(ctx: CanvasRenderingContext2D, photo: HTMLCanvasElement, w: numbe
   ctx.font = font(500, 2.6 * u)
   ctx.fillText(lang === 'fr' ? '68 ans d’indépendance · 2 octobre 2026' : '68 years of independence · 2 October 2026', 22 * u, y0 + 12.3 * u)
 
-  ctx.textAlign = 'right'
-  ctx.fillStyle = MP.gold
-  ctx.font = font(700, 13 * u)
-  ctx.fillText('68', w - 5 * u, y0 + 12.9 * u)
+  drawLogoChip(ctx, logo, w - 5 * u - 13 * u, y0 + 2 * u, 13 * u)
 
   return { x: w - 5 * u, y: 5.6 * u, size: 2.2 * u, align: 'right', color: 'rgba(255,255,255,.85)' }
 }
 
 /** B · Or — double gold border, flag chip, soft ink gradient at the foot, slogan left and a large gold 68 right. */
-function drawB(ctx: CanvasRenderingContext2D, photo: HTMLCanvasElement, w: number, lang: Lang): Watermark {
+function drawB(ctx: CanvasRenderingContext2D, photo: HTMLCanvasElement, w: number, lang: Lang, logo: HTMLImageElement | null): Watermark {
   const u = w / 100
   ctx.drawImage(photo, 0, 0, w, w)
 
@@ -107,17 +134,14 @@ function drawB(ctx: CanvasRenderingContext2D, photo: HTMLCanvasElement, w: numbe
   ctx.save()
   ctx.shadowColor = 'rgba(0,0,0,.35)'
   ctx.shadowBlur = 1.2 * u
-  ctx.textAlign = 'right'
-  ctx.fillStyle = MP.gold
-  ctx.font = font(700, 20 * u)
-  ctx.fillText('68', w - 8 * u, w - 8.6 * u)
+  drawLogoChip(ctx, logo, w - 8 * u - 16 * u, w - 8 * u - 16 * u, 16 * u)
   ctx.restore()
 
   return { x: 8 * u, y: w - 7.6 * u, size: 2.2 * u, align: 'left', color: 'rgba(255,255,255,.7)' }
 }
 
 /** C · Fête — white polaroid mount, rounded photo, tricolour ribbon on the corner, hashtag and a gold 68 badge. */
-function drawC(ctx: CanvasRenderingContext2D, photo: HTMLCanvasElement, w: number, lang: Lang): Watermark {
+function drawC(ctx: CanvasRenderingContext2D, photo: HTMLCanvasElement, w: number, lang: Lang, logo: HTMLImageElement | null): Watermark {
   const u = w / 100
   ctx.fillStyle = MP.white
   ctx.fillRect(0, 0, w, w)
@@ -148,22 +172,16 @@ function drawC(ctx: CanvasRenderingContext2D, photo: HTMLCanvasElement, w: numbe
   ctx.fillText(lang === 'fr' ? 'Mur National · An 68 · ' : 'National Wall · Year 68 · ', 6 * u, w - 5.6 * u)
   const tail = ctx.measureText(lang === 'fr' ? 'Mur National · An 68 · ' : 'National Wall · Year 68 · ').width
 
-  ctx.beginPath()
-  ctx.arc(w - 12 * u, w - 10 * u, 7 * u, 0, Math.PI * 2)
-  ctx.fillStyle = MP.gold
-  ctx.fill()
-  ctx.textAlign = 'center'
-  ctx.fillStyle = MP.ink
-  ctx.font = font(700, 6.2 * u)
-  ctx.fillText('68', w - 12 * u, w - 7.8 * u)
+  if (logo) ctx.drawImage(logo, w - 6 * u - 15 * u, w - 17.5 * u, 15 * u, 15 * u)
+  else drawLogoChip(ctx, null, w - 6 * u - 14 * u, w - 17 * u, 14 * u)
 
   return { x: 6 * u + tail, y: w - 5.6 * u, size: 2.7 * u, align: 'left', color: MP.muted }
 }
 
-const DRAW: Record<FrameId, (ctx: CanvasRenderingContext2D, photo: HTMLCanvasElement, w: number, lang: Lang) => Watermark> = { A: drawA, B: drawB, C: drawC }
+const DRAW: Record<FrameId, (ctx: CanvasRenderingContext2D, photo: HTMLCanvasElement, w: number, lang: Lang, logo: HTMLImageElement | null) => Watermark> = { A: drawA, B: drawB, C: drawC }
 
 /** Draws frame `id` around the square `photo` onto `ctx` (canvas of width `w`) and returns where the watermark goes. */
-export function drawFrame(ctx: CanvasRenderingContext2D, photo: HTMLCanvasElement, w: number, id: FrameId, lang: Lang): Watermark {
+export function drawFrame(ctx: CanvasRenderingContext2D, photo: HTMLCanvasElement, w: number, id: FrameId, lang: Lang, logo: HTMLImageElement | null): Watermark {
   ctx.textBaseline = 'alphabetic'
-  return DRAW[id](ctx, photo, w, lang)
+  return DRAW[id](ctx, photo, w, lang, logo)
 }

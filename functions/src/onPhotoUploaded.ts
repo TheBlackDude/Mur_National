@@ -1,7 +1,7 @@
 import { onObjectFinalized } from 'firebase-functions/v2/storage'
 import { logger } from 'firebase-functions/v2'
 import { getApp } from 'firebase-admin/app'
-import { Timestamp } from 'firebase-admin/firestore'
+import { Timestamp, type DocumentReference } from 'firebase-admin/firestore'
 import sharp from 'sharp'
 import { bucket, db, FieldValue } from './lib.js'
 import { approveContribution } from './moderate.js'
@@ -26,9 +26,26 @@ export const onPhotoUploaded = onObjectFinalized({ memory: '1GiB', timeoutSecond
   if (event.data.contentType !== 'image/jpeg') return
 
   const [buf] = await bucket().file(path).download()
-  const base = path.replace(/^uploads\//, '').replace(/\.jpg$/, '') // {uid}/{id}
-  const id = base.split('/')[1]
+  const id = idFromPath(path)
+  const rendition = await renderRenditions(buf, id)
+  const analysis = await analyze(buf, rendition)
 
+  // The doc may not exist yet if the callable is still running (a video clip can take minutes on 3G to
+  // arrive after its poster): retry briefly, then leave it to submitContribution, which calls
+  // finishIfAlreadyProcessed once the doc exists.
+  const q = db.collection('contributions').where('files.original', '==', path).limit(1)
+  for (let i = 0; i < 6; i++) {
+    const snap = await q.get()
+    if (!snap.empty) { await annotate(snap.docs[0].ref, id, analysis); return }
+    await new Promise((r) => setTimeout(r, 1500))
+  }
+  logger.info('onPhotoUploaded: no contribution yet, renditions staged', { path })
+})
+
+export const idFromPath = (path: string) => path.replace(/^uploads\//, '').replace(/\.jpg$/, '').split('/')[1]
+
+/** Thumbnail + 1080 rendition into staging/. Returns the rendition buffer for SafeSearch. */
+export async function renderRenditions(buf: Buffer, id: string): Promise<Buffer> {
   const [thumb, rendition] = await Promise.all([
     sharp(buf).rotate().resize(400, 400, { fit: 'cover' }).jpeg({ quality: 78 }).toBuffer(),
     sharp(buf).rotate().resize(1080, 1080, { fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 82 }).toBuffer(),
@@ -37,46 +54,59 @@ export const onPhotoUploaded = onObjectFinalized({ memory: '1GiB', timeoutSecond
     bucket().file(`staging/thumbs/${id}.jpg`).save(thumb, { contentType: 'image/jpeg' }),
     bucket().file(`staging/public/${id}.jpg`).save(rendition, { contentType: 'image/jpeg' }),
   ])
+  return rendition
+}
 
+type Analysis = { phash: string; safeSearch: SafeSearch | null; config: { safeSearch: boolean; kioskAutoApprove: boolean } }
+
+export async function analyze(buf: Buffer, rendition: Buffer): Promise<Analysis> {
   const config = await appConfig()
   const [phash, safeSearch] = await Promise.all([
     averageHash(buf),
     config.safeSearch ? safeSearchDetect(rendition) : Promise.resolve(null),
   ])
+  return { phash, safeSearch, config }
+}
 
-  // The doc may not exist yet if the callable is still running: retry briefly.
-  const q = db.collection('contributions').where('files.original', '==', path).limit(1)
-  for (let i = 0; i < 5; i++) {
-    const snap = await q.get()
-    if (!snap.empty) {
-      const doc = snap.docs[0]
-      const c = doc.data()
+/** Writes the analysis and routing (S6.7) on the contribution. Idempotent. */
+export async function annotate(ref: DocumentReference, id: string, { phash, safeSearch, config }: Analysis): Promise<void> {
+  const snap = await ref.get()
+  const c = snap.data()
+  if (!c) return
+  const duplicateOf = await findDuplicate(phash, ref.id)
+  const flagged = safeSearch !== null && (FLAGGED.includes(safeSearch.adult) || FLAGGED.includes(safeSearch.violence))
+  const clean = safeSearch !== null && !FLAGGED.includes(safeSearch.adult) && !FLAGGED.includes(safeSearch.violence) && !FLAGGED.includes(safeSearch.racy)
+  const reviewReason: ReviewReason = duplicateOf ? 'duplicate' : flagged ? 'safesearch' : null
+  const kiosk = c.kiosk === true
+  const priority = kiosk && clean ? 1 : 0
 
-      const duplicateOf = await findDuplicate(phash, doc.id)
-      const flagged = safeSearch !== null && (FLAGGED.includes(safeSearch.adult) || FLAGGED.includes(safeSearch.violence))
-      const clean = safeSearch !== null && !FLAGGED.includes(safeSearch.adult) && !FLAGGED.includes(safeSearch.violence) && !FLAGGED.includes(safeSearch.racy)
-      const reviewReason: ReviewReason = duplicateOf ? 'duplicate' : flagged ? 'safesearch' : null
-      const kiosk = c.kiosk === true
-      const priority = kiosk && clean ? 1 : 0
+  await ref.update({
+    phash, duplicateOf, safeSearch, reviewReason, priority,
+    'files.thumb': `staging/thumbs/${id}.jpg`,
+    'files.public': `staging/public/${id}.jpg`,
+    ...(reviewReason && c.status === 'pending' ? { status: 'review' } : {}),
+    processedAt: FieldValue.serverTimestamp(),
+  })
 
-      await doc.ref.update({
-        phash, duplicateOf, safeSearch, reviewReason, priority,
-        'files.thumb': `staging/thumbs/${id}.jpg`,
-        'files.public': `staging/public/${id}.jpg`,
-        ...(reviewReason && c.status === 'pending' ? { status: 'review' } : {}),
-        processedAt: FieldValue.serverTimestamp(),
-      })
-
-      if (config.kioskAutoApprove && kiosk && clean && !duplicateOf && c.status === 'pending') {
-        const fresh = (await doc.ref.get()).data()!
-        await approveContribution(doc.ref, fresh, { by: 'system', byEmail: null })
-      }
-      return
-    }
-    await new Promise((r) => setTimeout(r, 1500))
+  if (config.kioskAutoApprove && kiosk && clean && !duplicateOf && c.status === 'pending') {
+    const fresh = (await ref.get()).data()!
+    await approveContribution(ref, fresh, { by: 'system', byEmail: null })
   }
-  logger.warn('onPhotoUploaded: no contribution found for upload', { path })
-})
+}
+
+/**
+ * Called by submitContribution right after the doc is created: if onPhotoUploaded already staged the
+ * renditions but found no doc (slow client, slow clip upload), finish the job now.
+ */
+export async function finishIfAlreadyProcessed(ref: DocumentReference, originalPath: string): Promise<void> {
+  const id = idFromPath(originalPath)
+  const thumb = bucket().file(`staging/thumbs/${id}.jpg`)
+  const [exists] = await thumb.exists()
+  if (!exists) return
+  const [buf] = await bucket().file(originalPath).download()
+  const [rendition] = await bucket().file(`staging/public/${id}.jpg`).download().catch(() => [buf] as [Buffer])
+  await annotate(ref, id, await analyze(buf, rendition))
+}
 
 /** Feature flags editors can flip without a deploy. Defaults are the safe ones. */
 async function appConfig(): Promise<{ safeSearch: boolean; kioskAutoApprove: boolean }> {
