@@ -115,19 +115,33 @@ async function driveFetch(token: string, url: string, init?: RequestInit) {
   return res
 }
 
+/**
+ * The destination must sit in a Shared Drive: since 2025 a service account has no My Drive quota, so uploads into a
+ * personal folder fail with 403 on every file. Checked once per run so the dashboard gets one clear sentence.
+ */
+async function requireSharedDriveFolder(token: string, folderId: string) {
+  const res = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(folderId)}?fields=id,driveId,mimeType&supportsAllDrives=true`, { headers: { Authorization: `Bearer ${token}` } })
+  if (res.status === 404) throw new HttpsError('failed-precondition', `Dossier Drive ${folderId} introuvable ou non partagé avec le compte de service`)
+  if (!res.ok) throw new HttpsError('failed-precondition', `Drive ${res.status}: ${(await res.text()).slice(0, 120)}`)
+  const f = (await res.json()) as { driveId?: string; mimeType?: string }
+  if (!f.driveId) throw new HttpsError('failed-precondition', "Le dossier d'export doit être dans un Drive partagé (Google Workspace) : un compte de service n'a pas de quota « Mon Drive »")
+}
+
 /** Resumable upload in one PUT: rushes are ≤ 150 MB and the function has 1 GiB. */
-async function uploadToDrive(token: string, folderId: string, name: string, data: Buffer): Promise<string> {
+async function uploadToDrive(token: string, folderId: string, name: string, data: Buffer, mimeType: string): Promise<string> {
   const start = await driveFetch(token, 'https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&supportsAllDrives=true', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json; charset=UTF-8', 'X-Upload-Content-Type': 'video/mp4', 'X-Upload-Content-Length': String(data.length) },
-    body: JSON.stringify({ name, parents: [folderId], mimeType: 'video/mp4' }),
+    headers: { 'Content-Type': 'application/json; charset=UTF-8', 'X-Upload-Content-Type': mimeType, 'X-Upload-Content-Length': String(data.length) },
+    body: JSON.stringify({ name, parents: [folderId], mimeType }),
   })
   const session = start.headers.get('location')
   if (!session) throw new Error('Drive: no upload session')
-  const done = await driveFetch(token, session, { method: 'PUT', headers: { 'Content-Type': 'video/mp4', 'Content-Length': String(data.length) }, body: new Uint8Array(data) })
+  const done = await driveFetch(token, session, { method: 'PUT', headers: { 'Content-Type': mimeType, 'Content-Length': String(data.length) }, body: new Uint8Array(data) })
   const { id } = (await done.json()) as { id: string }
   return id
 }
+
+const MIME: Record<string, string> = { mp4: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm' }
 
 async function findOrCreateIndexSheet(token: string, folderId: string): Promise<string> {
   const q = encodeURIComponent(`name = '${INDEX_NAME}' and '${folderId}' in parents and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false`)
@@ -152,24 +166,31 @@ export const exportSelected = onCall({ timeoutSeconds: 540, memory: '1GiB' }, as
   if (!driveFolderId) { logger.warn('exportSelected: no config/app.exports.driveFolderId'); return { exported: 0, skipped, folder: null } }
 
   const token = await googleAccessToken([DRIVE, SHEETS])
+  if (docs.length) await requireSharedDriveFolder(token, driveFolderId)
   const rows: (string | number)[][] = []
   let exported = 0
+  let firstError: string | null = null
   for (const d of docs) {
     const c = d.data()
-    const path = c.files?.original as string | undefined
+    // Film videos keep the clip in files.original; video selfies keep the framed poster there and the clip in files.video.
+    const path = (c.files?.video ?? c.files?.original) as string | undefined
     if (!path) { logger.warn('exportSelected: no file', { id: d.id }); continue }
     try {
       const [data] = await bucket().file(path).download()
-      const name = `${safeName(c.mission)}_${c.participantNumber}_${safeName(c.firstName) || 'anonyme'}.mp4`
-      const driveFileId = await uploadToDrive(token, driveFolderId, name, data)
+      const ext = (path.match(/\.(mp4|mov|webm)$/i)?.[1] ?? 'mp4').toLowerCase()
+      const name = `${safeName(c.mission ?? c.country ?? 'GN')}_${c.participantNumber}_${safeName(c.firstName) || 'anonyme'}.${ext}`
+      const driveFileId = await uploadToDrive(token, driveFolderId, name, data, MIME[ext] ?? 'video/mp4')
       const exportedAt = new Date().toISOString()
       await d.ref.update({ exportedAt: FieldValue.serverTimestamp(), driveFileId })
       rows.push([c.mission ?? '', c.participantNumber ?? '', c.firstName ?? '', c.city ?? '', c.durationSec ?? '', (c.tags ?? []).join(' '), c.notes ?? '', driveFileId, exportedAt])
       exported++
     } catch (e) {
+      firstError ??= String(e)
       logger.error('exportSelected: item failed', { id: d.id, error: String(e) })
     }
   }
+  // Nothing went through although there was work: say why instead of reporting zero.
+  if (!exported && docs.length && firstError) throw new HttpsError('internal', firstError.slice(0, 200))
   if (rows.length) {
     try { await appendRows(token, await findOrCreateIndexSheet(token, driveFolderId), rows, INDEX_HEADER) }
     catch (e) { logger.error('exportSelected: index sheet failed', { error: String(e) }); throw new HttpsError('internal', `Index sheet: ${String(e).slice(0, 120)}`) }
