@@ -4,8 +4,7 @@
  * resumes where it stopped when the same file is picked again, chunks adapt to the link speed,
  * transient failures retry for up to two hours, and pause/resume works between chunks.
  */
-import { getToken } from 'firebase/app-check'
-import { app, appCheck, auth } from './firebase'
+import { app, auth, authHeaders, withTimeout } from './firebase'
 
 const BUCKET = (app.options.storageBucket as string | undefined) ?? 'guinea68.firebasestorage.app'
 const BASE = `https://firebasestorage.googleapis.com/v0/b/${BUCKET}/o`
@@ -39,15 +38,9 @@ function readStore(): Store { try { return JSON.parse(localStorage.getItem(STORE
 function writeStore(s: Store) { try { localStorage.setItem(STORE, JSON.stringify(s)) } catch { /* private mode */ } }
 function sessionKey(uid: string, f: UploadFile) { return `${uid}|${f.name ?? 'blob'}|${f.size}|${f.lastModified ?? 0}` }
 
-async function authHeaders(): Promise<Record<string, string>> {
-  const h: Record<string, string> = {}
-  const u = auth.currentUser
-  if (u) h.Authorization = `Firebase ${await u.getIdToken()}`
-  if (appCheck) { try { h['X-Firebase-AppCheck'] = (await getToken(appCheck)).token } catch { /* App Check optional here; the callable enforces it */ } }
-  return h
-}
-
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+const CHUNK_TIMEOUT_MS = 90_000, CONTROL_TIMEOUT_MS = 20_000
 
 /** Starts (or resumes) the upload and returns a handle. `done` rejects only on a permanent error or cancel. */
 export function resumableUpload(o: UploadOptions): UploadHandle {
@@ -69,7 +62,12 @@ export function resumableUpload(o: UploadOptions): UploadHandle {
     if (url) {
       const q = await query(url).catch(() => null)
       if (q === null) url = ''
-      else if (q.final) { o.onProgress?.(total, total); o.onState?.('done'); delete store[key]; writeStore(store); return { path: store[key]?.path ?? o.path } }
+      else if (q.final) {
+        // Fully sent last time but never registered (the callable failed): hand back the path it landed on.
+        const landed = store[key].path
+        o.onProgress?.(total, total); o.onState?.('done'); delete store[key]; writeStore(store)
+        return { path: landed }
+      }
       else offset = q.received
     }
     let path = store[key]?.url === url && url ? store[key].path : o.path
@@ -97,6 +95,7 @@ export function resumableUpload(o: UploadOptions): UploadHandle {
           method: 'POST',
           headers: { ...(await authHeaders()), 'X-Goog-Upload-Command': last ? 'upload, finalize' : 'upload', 'X-Goog-Upload-Offset': String(offset), 'Content-Type': 'application/octet-stream' },
           body: o.file.slice(offset, end),
+          signal: AbortSignal.timeout(CHUNK_TIMEOUT_MS), // a dead 3G socket otherwise sits for minutes before the retry
         })
         if (res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429) {
           // The session is gone or refused: forget it so the next attempt starts clean.
@@ -153,6 +152,7 @@ async function start(path: string, contentType: string, size: number): Promise<s
       'Content-Type': 'application/json; charset=utf-8',
     },
     body: JSON.stringify({ name: path, contentType }),
+    signal: AbortSignal.timeout(CONTROL_TIMEOUT_MS),
   })
   if (!res.ok) throw Object.assign(new Error(`start ${res.status}`), { permanent: res.status >= 400 && res.status < 500 })
   const url = res.headers.get('X-Goog-Upload-URL')
@@ -161,7 +161,7 @@ async function start(path: string, contentType: string, size: number): Promise<s
 }
 
 async function query(url: string): Promise<{ received: number; final: boolean }> {
-  const res = await fetch(url, { method: 'POST', headers: { ...(await authHeaders()), 'X-Goog-Upload-Command': 'query' } })
+  const res = await fetch(url, { method: 'POST', headers: { ...(await authHeaders()), 'X-Goog-Upload-Command': 'query' }, signal: AbortSignal.timeout(CONTROL_TIMEOUT_MS) })
   if (!res.ok) throw new Error(`query ${res.status}`)
   const status = res.headers.get('X-Goog-Upload-Status') ?? 'active'
   const received = Number(res.headers.get('X-Goog-Upload-Size-Received') ?? 0)
@@ -176,7 +176,7 @@ export async function keepAwake(): Promise<() => void> {
   let lock: WL | null = null
   const acquire = async () => { try { lock = await nav.wakeLock!.request('screen') } catch { lock = null } }
   const onVisible = () => { if (document.visibilityState === 'visible') acquire() }
-  await acquire()
+  await withTimeout(acquire(), 2000).catch(() => {})
   document.addEventListener('visibilitychange', onVisible)
   return () => { document.removeEventListener('visibilitychange', onVisible); lock?.release().catch(() => {}) }
 }

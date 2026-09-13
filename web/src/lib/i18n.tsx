@@ -4,6 +4,7 @@ import en from '../i18n/en.json'
 
 type Lang = 'fr' | 'en'
 type Dict = typeof fr
+export type TKey = keyof Dict
 const dicts: Record<Lang, Dict> = { fr, en: en as Dict }
 
 const Ctx = createContext<{ lang: Lang; setLang: (l: Lang) => void; t: (k: keyof Dict, vars?: Record<string, string | number>) => string }>(null!)

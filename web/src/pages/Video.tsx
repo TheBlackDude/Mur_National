@@ -34,6 +34,8 @@ export default function Video() {
   const [result, setResult] = useState<{ participantNumber: number } | null>(null)
   const [retrying, setRetrying] = useState(false)
   const task = useRef<UploadHandle | null>(null)
+  // Storage path of the clip that already arrived for this same File: a retry after a failed registration skips the upload.
+  const sent = useRef<{ file: File; path: string } | null>(null)
   const input = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -76,19 +78,29 @@ export default function Video() {
     const ext = file.type === 'video/quicktime' ? 'mov' : file.type === 'video/webm' ? 'webm' : 'mp4'
     const path = `videos/${info.code}/${crypto.randomUUID()}.${ext}`
     const release = await keepAwake()
-    const up = resumableUpload({
-      path, file, contentType: file.type || 'video/mp4',
-      onProgress: (sent, total) => setProgress(Math.round((sent / total) * 100)),
-      onState: (st) => setRetrying(st === 'retrying'),
-    })
-    task.current = up
     try {
-      // The uploader may resume a previous session for this same file, whose path differs from the fresh one.
-      const { path: sentPath } = await up.done
+      let sentPath = sent.current?.file === file ? sent.current.path : null
+      if (!sentPath) {
+        const up = resumableUpload({
+          path, file, contentType: file.type || 'video/mp4',
+          onProgress: (n, total) => setProgress(Math.round((n / total) * 100)),
+          onState: (st) => setRetrying(st === 'retrying'),
+        })
+        task.current = up
+        // The uploader may resume a previous session for this same file, whose path differs from the fresh one.
+        sentPath = (await up.done).path
+        sent.current = { file, path: sentPath }
+      } else setProgress(100)
       const res = await submitVideo({ path: sentPath, mission: info.code, token, durationSec, firstName: firstName || undefined, city: city || undefined, consent: { film: true } })
+      sent.current = null
       setResult(res); setPhase('done')
     } catch (e) {
-      if ((e as Error).message !== 'cancelled') { setError(t('video.error')); setPhase('ready') }
+      const code = (e as { code?: string }).code ?? ''
+      if (code.includes('not-found') || code.includes('invalid-argument') || code.includes('failed-precondition')) sent.current = null // the server dropped the file
+      if ((e as Error).message !== 'cancelled') {
+        setError(code.includes('resource-exhausted') ? t('video.ratelimit') : code.includes('deadline-exceeded') || code.includes('unavailable') ? t('video.timeout') : t('video.error'))
+        setPhase('ready')
+      }
     } finally { task.current = null; release() }
   }
 

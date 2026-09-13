@@ -36,25 +36,27 @@ export const submitVideo = onCall<SubmitReq>(async (req) => {
   const path = typeof d.path === 'string' ? d.path : ''
   if (!path.startsWith(`videos/${d.mission}/`) || !EXT.test(path) || path.includes('..')) throw new HttpsError('invalid-argument', 'Bad path')
 
+  const file = bucket().file(path)
+  // Anything that can never succeed drops the upload; a rate-limited upload stays so the retry needs no re-send.
+  const refuse = async (e: HttpsError): Promise<never> => { await file.delete().catch(() => {}); throw e }
+
   let mission: Mission
   try { mission = await verifyMission(d.mission, d.token) }
-  catch (e) { await bucket().file(path).delete().catch(() => {}); throw e }
+  catch (e) { await file.delete().catch(() => {}); throw e }
 
-  if (d.consent?.film !== true) throw new HttpsError('failed-precondition', 'Consent required')
+  if (d.consent?.film !== true) await refuse(new HttpsError('failed-precondition', 'Consent required'))
   const durationSec = Number(d.durationSec)
-  if (!Number.isFinite(durationSec) || durationSec < MIN_SEC || durationSec > MAX_SEC) throw new HttpsError('failed-precondition', 'Duration out of range')
-  await checkRate(uid, 3)
+  if (!Number.isFinite(durationSec) || durationSec < MIN_SEC || durationSec > MAX_SEC) await refuse(new HttpsError('failed-precondition', 'Duration out of range'))
 
-  const file = bucket().file(path)
   const [exists] = await file.exists()
   if (!exists) throw new HttpsError('not-found', 'Upload not found')
   const [meta] = await file.getMetadata()
   const sizeBytes = Number(meta.size ?? 0)
   const contentType = String(meta.contentType ?? '')
-  if (sizeBytes > MAX_BYTES || !contentType.startsWith('video/')) {
-    await file.delete().catch(() => {})
-    throw new HttpsError('invalid-argument', 'Not a video under 150 MB')
-  }
+  if (sizeBytes > MAX_BYTES || !contentType.startsWith('video/')) await refuse(new HttpsError('invalid-argument', 'Not a video under 150 MB'))
+
+  // A mission's phone records many people in a row: 20 films an hour per device, behind the mission token.
+  await checkRate(uid, 20, 'film')
 
   const participantNumber = await nextParticipantNumber()
   const ref = db.collection('contributions').doc()

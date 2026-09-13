@@ -22,10 +22,13 @@ export function requireRole(req: CallableRequest, ...roles: Role[]) {
   return auth
 }
 
-/** Hourly rate limit per uid kept in RTDB: cheap, atomic, auto-expiring by bucket name. */
-export async function checkRate(uid: string, max: number) {
+/**
+ * Hourly rate limit per uid and per action kept in RTDB: cheap, atomic, auto-expiring by bucket name.
+ * `scope` keeps the counters apart: a phone that made three selfies must still be able to send a film video.
+ */
+export async function checkRate(uid: string, max: number, scope: 'selfie' | 'film' | 'report' = 'selfie') {
   const bucketKey = Math.floor(Date.now() / 3_600_000)
-  const ref = rtdb.ref(`rate/${uid}/${bucketKey}`)
+  const ref = rtdb.ref(`rate/${uid}/${scope}/${bucketKey}`)
   const { snapshot } = await ref.transaction((n: number | null) => (n ?? 0) + 1)
   if ((snapshot.val() as number) > max) throw new HttpsError('resource-exhausted', 'Rate limit')
 }

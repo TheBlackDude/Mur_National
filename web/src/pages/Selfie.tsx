@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { ref as sref, uploadBytes } from 'firebase/storage'
 import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, type User } from 'firebase/auth'
-import { auth, ensureAnonymousUser, missionInfo, storage, submitContribution, type MissionInfo } from '../lib/firebase'
+import { auth, ensureAnonymousUser, missionInfo, submitContribution, type MissionInfo } from '../lib/firebase'
 import { keepAwake, resumableUpload, type UploadHandle } from '../lib/upload'
 import { compose, drawSquare, fileToBitmap, posterFromVideo, scaled, shareOrDownload, souvenirCard, toJpegUnder } from '../lib/image'
 import { FRAME_IDS, SITE_DOMAIN, loadLogo, type FrameId } from '../lib/frames'
@@ -41,8 +40,10 @@ export default function Selfie() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState<{ id: string; participantNumber: number } | null>(null)
-  const [upload, setUpload] = useState<{ pct: number; state: string; paused: boolean } | null>(null)
+  const [upload, setUpload] = useState<{ pct: number; state: string; paused: boolean; phase: 'clip' | 'photo' | 'register' } | null>(null)
   const uploadRef = useRef<UploadHandle | null>(null)
+  // What already reached Storage for the current composition: a retry after a failed registration skips the upload.
+  const sentRef = useRef<{ composed: HTMLCanvasElement; id: string; path: string; videoPath?: string } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const videoRef = useRef<HTMLInputElement>(null)
 
@@ -158,27 +159,34 @@ export default function Selfie() {
     const release = await keepAwake()
     try {
       const user = await ensureAnonymousUser()
-      const jpeg = await toJpegUnder(composed)
-      const id = crypto.randomUUID()
-      const path = `uploads/${user.uid}/${id}.jpg`
-      let videoPath: string | undefined
-      if (clip) {
-        // Clip first (long, resumable, with progress), poster last: the poster triggers server processing,
-        // which must find the contribution document within seconds of the poster landing.
-        videoPath = `uploads/${user.uid}/${id}.${clip.ext}`
-        const file = Object.assign(clip.blob.slice(0, clip.blob.size, clip.blob.type), { name: clip.name, lastModified: clip.lastModified })
-        const h = resumableUpload({
-          path: videoPath, file, contentType: clip.blob.type || `video/${clip.ext === 'mov' ? 'quicktime' : clip.ext}`,
-          onProgress: (sent, total) => setUpload((u) => ({ pct: Math.round((sent / total) * 100), state: u?.state ?? 'uploading', paused: u?.paused ?? false })),
-          onState: (state) => setUpload((u) => ({ pct: u?.pct ?? 0, state, paused: state === 'paused' })),
-        })
+      const sent = sentRef.current?.composed === composed ? sentRef.current : null
+      const id = sent?.id ?? crypto.randomUUID()
+      const path = sent?.path ?? `uploads/${user.uid}/${id}.jpg`
+      let videoPath = sent?.videoPath
+      const progress = (phase: 'clip' | 'photo') => ({
+        onProgress: (n: number, total: number) => setUpload((u) => ({ pct: Math.round((n / total) * 100), state: u?.state ?? 'uploading', paused: u?.paused ?? false, phase })),
+        onState: (state: string) => setUpload((u) => ({ pct: u?.pct ?? 0, state, paused: state === 'paused', phase })),
+      })
+      if (!sent) {
+        const jpeg = await toJpegUnder(composed)
+        if (clip) {
+          // Clip first (long, resumable, with progress), poster last: the poster triggers server processing,
+          // which must find the contribution document within seconds of the poster landing.
+          videoPath = `uploads/${user.uid}/${id}.${clip.ext}`
+          const file = Object.assign(clip.blob.slice(0, clip.blob.size, clip.blob.type), { name: clip.name, lastModified: clip.lastModified })
+          const h = resumableUpload({ path: videoPath, file, contentType: clip.blob.type || `video/${clip.ext === 'mov' ? 'quicktime' : clip.ext}`, ...progress('clip') })
+          uploadRef.current = h
+          await h.done
+          uploadRef.current = null
+        }
+        // The photo goes through the same chunked, retrying uploader: a single PUT on 3G can sit for minutes without a word.
+        const h = resumableUpload({ path, file: Object.assign(jpeg, { name: `${id}.jpg`, lastModified: 0 }), contentType: 'image/jpeg', ...progress('photo') })
         uploadRef.current = h
         await h.done
         uploadRef.current = null
-        await resumableUpload({ path, file: jpeg, contentType: 'image/jpeg' }).done
-      } else {
-        await uploadBytes(sref(storage, path), jpeg, { contentType: 'image/jpeg' })
+        sentRef.current = { composed, id, path, videoPath }
       }
+      setUpload({ pct: 100, state: 'registering', paused: false, phase: 'register' })
       const pref = prefectures.find((p) => p.code === prefecture)
       const res = await submitContribution({
         path, frame,
@@ -189,11 +197,17 @@ export default function Selfie() {
         ...(clip ? { type: 'video' as const, videoPath, durationSec: clip.durationSec } : {}),
         ...(mission ? { mission: mission.code, token: missionToken } : {}),
       })
+      sentRef.current = null
       setResult(res)
       goTo(4)
     } catch (e: unknown) {
       const code = (e as { code?: string }).code ?? ''
-      setError(code.includes('resource-exhausted') ? t('selfie.ratelimit') : code.includes('permission-denied') ? t('selfie.blocked') : t('selfie.error'))
+      if (code.includes('not-found')) sentRef.current = null // the server never saw the file: upload again next time
+      setError(
+        code.includes('resource-exhausted') ? t('selfie.ratelimit')
+        : code.includes('permission-denied') ? t('selfie.blocked')
+        : code.includes('deadline-exceeded') || code.includes('unavailable') ? t('selfie.timeout')
+        : t('selfie.error'))
     } finally { setBusy(false); setUpload(null); uploadRef.current = null; release() }
   }
 
@@ -287,7 +301,7 @@ export default function Selfie() {
           </div>
           <div className="grid grid-cols-[auto_1fr] gap-2">
             <button className="btn-outline px-4" onClick={back}>← {t('selfie.back')}</button>
-            <button className="btn-primary" onClick={() => goTo(3)}>Suivant →</button>
+            <button className="btn-primary" onClick={() => goTo(3)}>{t('selfie.next')} →</button>
           </div>
         </div>
       )}
@@ -318,9 +332,9 @@ export default function Selfie() {
             <div className="grid gap-2" role="status" aria-live="polite">
               <div className="h-2.5 rounded-full bg-rule overflow-hidden"><div className="h-full bg-primary transition-[width]" style={{ width: `${upload.pct}%` }} /></div>
               <div className="flex items-center gap-3 text-sm">
-                <span className="tabular font-medium">{t('selfie.uploadProgress', { p: upload.pct })}</span>
+                <span className="tabular font-medium">{upload.phase === 'register' ? t('selfie.registering') : `${t(upload.phase === 'clip' ? 'selfie.sendingClip' : 'selfie.sendingPhoto')} · ${t('selfie.uploadProgress', { p: upload.pct })}`}</span>
                 {upload.state === 'retrying' && <span className="text-warn">{t('selfie.retrying')}</span>}
-                <button type="button" className="btn-outline h-9 px-3 text-xs ml-auto" onClick={togglePause}>{upload.paused ? t('video.resume') : t('video.pause')}</button>
+                {upload.phase === 'clip' && <button type="button" className="btn-outline h-9 px-3 text-xs ml-auto" onClick={togglePause}>{upload.paused ? t('video.resume') : t('video.pause')}</button>}
               </div>
               <p className="text-xs text-muted">{t('selfie.uploadHint')}</p>
               <p className="text-xs text-muted">{t('selfie.resumeHint')}</p>

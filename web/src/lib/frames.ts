@@ -76,7 +76,7 @@ function flag(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h:
   ctx.restore()
 }
 
-/** A · Drapeau — full-bleed photo, tricolour hairline on top, ink band with the flag, the slogan and a big gold 68. */
+/** A · Drapeau — full-bleed photo, tricolour hairline on top, ink band with the slogan and the An 68 logo. The hairline is the only flag. */
 function drawA(ctx: CanvasRenderingContext2D, photo: HTMLCanvasElement, w: number, lang: Lang, logo: HTMLImageElement | null): Watermark {
   const u = w / 100
   ctx.drawImage(photo, 0, 0, w, w)
@@ -85,15 +85,14 @@ function drawA(ctx: CanvasRenderingContext2D, photo: HTMLCanvasElement, w: numbe
   const bh = 17 * u, y0 = w - bh
   ctx.fillStyle = MP.ink
   ctx.fillRect(0, y0, w, bh)
-  flag(ctx, 5 * u, y0 + 4 * u, 13.5 * u, 9 * u, 1 * u)
 
   ctx.textAlign = 'left'
   ctx.fillStyle = MP.white
-  ctx.font = font(700, 4.4 * u)
-  ctx.fillText(lang === 'fr' ? 'FIER D’ÊTRE GUINÉEN' : 'PROUD TO BE GUINEAN', 22 * u, y0 + 7.8 * u)
+  ctx.font = font(700, 4.8 * u)
+  ctx.fillText(lang === 'fr' ? 'FIER D’ÊTRE GUINÉEN' : 'PROUD TO BE GUINEAN', 5 * u, y0 + 8 * u)
   ctx.fillStyle = MP.gold
-  ctx.font = font(500, 2.6 * u)
-  ctx.fillText(lang === 'fr' ? '68 ans d’indépendance · 2 octobre 2026' : '68 years of independence · 2 October 2026', 22 * u, y0 + 12.3 * u)
+  ctx.font = font(500, 2.7 * u)
+  ctx.fillText(lang === 'fr' ? '68 ans d’indépendance · 2 octobre 2026' : '68 years of independence · 2 October 2026', 5 * u, y0 + 12.6 * u)
 
   drawLogoChip(ctx, logo, w - 5 * u - 13 * u, y0 + 2 * u, 13 * u)
 

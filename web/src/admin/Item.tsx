@@ -1,4 +1,4 @@
-import { useI18n } from '../lib/i18n'
+import { useI18n, type TKey } from '../lib/i18n'
 import { fmtDate, placeName, useContribution, useHistory, useStorageUrl } from './hooks'
 import { FLAGGED, type Action, type Contribution } from './types'
 
@@ -59,8 +59,8 @@ export default function Item({ c, canEdit, busy, lockedBy, onAction, onReject, c
                 <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs">
                   {Object.entries(c.safeSearch).map(([k, v]) => (
                     <div key={k} className="contents">
-                      <dt className="text-muted capitalize">{k}</dt>
-                      <dd className={FLAGGED.includes(v) ? 'text-danger font-medium' : v === 'POSSIBLE' ? 'text-warn' : 'text-muted'}>{v.toLowerCase().replace('_', ' ')}</dd>
+                      <dt className="text-muted">{t(`admin.ss.${k}` as TKey)}</dt>
+                      <dd className={FLAGGED.includes(v) ? 'text-danger font-medium' : v === 'POSSIBLE' ? 'text-warn' : 'text-muted'}>{t(`admin.likelihood.${v}` as TKey)}</dd>
                     </div>
                   ))}
                 </dl>
@@ -94,7 +94,7 @@ export default function Item({ c, canEdit, busy, lockedBy, onAction, onReject, c
                 <ul className="mt-1 grid gap-1 text-xs">
                   {history.map((h) => (
                     <li key={h.id} className="flex gap-2 border-b border-rule py-1">
-                      <span className="font-medium">{h.action}{h.reason ? ` · ${h.reason}` : ''}{h.block ? ' · block' : ''}</span>
+                      <span className="font-medium">{t(`admin.action.${h.action}` as TKey)}{h.reason ? ` · ${t(`admin.reason.${h.reason}` as TKey)}` : ''}{h.block ? ` · ${t('admin.action.block')}` : ''}</span>
                       <span className="text-muted ml-auto text-right">{h.byEmail ?? h.by}<br />{fmtDate(h.at, lang)}</span>
                     </li>
                   ))}

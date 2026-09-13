@@ -66,8 +66,9 @@ export const submitContribution = onCall<Req>(async (req) => {
   if (await isBlocked(`uid:${uid}`)) throw new HttpsError('permission-denied', 'Blocked')
 
   // Kiosk mode is only honoured for staff-signed devices; citizens get the standard ceiling.
+  // A mission phone (token-gated) serves many people in a row, so it gets the kiosk ceiling too.
   const kiosk = !!d.kiosk && (token.moderator === true || token.kiosk === true)
-  await checkRate(uid, kiosk ? 20 : 5)
+  await checkRate(uid, kiosk || mission ? 20 : 5, 'selfie')
 
   const [exists] = await bucket().file(d.path).exists()
   if (!exists) throw new HttpsError('not-found', 'Upload not found')
