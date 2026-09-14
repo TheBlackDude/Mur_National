@@ -5,4 +5,4 @@
 - Copy is French first; every string goes through `web/src/i18n/{fr,en}.json`.
 - Clients never write to `contributions`. Anything that changes public state is a callable in `functions/src`.
 - Counters and the participant sequence live in Realtime Database, documents in Firestore.
-- Build checks: `cd web && npm run build`, `cd functions && npm run build`.
+- Build checks: `cd web && npm run build`, `cd functions && npm run build`. Rules tests: `cd tests && npm test` (emulators, needs Java). Load test: `scripts/README.md`.

@@ -61,7 +61,8 @@ gcloud recaptcha keys create --web --display-name="Mur National" --domains=thebl
 ```
 The site key goes in `VITE_RECAPTCHA_SITE_KEY`; the client uses `ReCaptchaEnterpriseProvider`. `guineen68.com` and `www.guineen68.com` were added to the key on 14 Sept 2026 (`gcloud recaptcha keys update`).
 Enterprise is free up to 10 000 assessments a month, then about 1 USD per 1 000; App Check tokens last an hour, so a week at 100 000 participants costs on the order of 100 USD.
-Leave enforcement in the App Check → APIs tab in **monitoring** until the D7 load test; callables already enforce App Check in code.
+Leave enforcement in the App Check → APIs tab in **monitoring** until the D7 load test; callables already enforce App Check in code. After the load test passes, switch Cloud Storage and Cloud Firestore to **Enforced** in that tab (Realtime Database stays unenforced: the giant screen and the widget read the counter without a token).
+For the k6 load test the callables need a token the laptop can mint: register a **debug token** (App Check → Apps → web app → ⋮ → Manage debug tokens) and pass it as `APPCHECK_DEBUG_TOKEN` to `scripts/load/prepare.mjs`; delete it once the test is over.
 
 ## 8. Push the web config to GitHub
 ```bash
@@ -105,6 +106,9 @@ The Cloud Vision, Google Sheets and Google Drive APIs are enabled on `guinea68`.
 1. Create a Drive folder **Rushes An 68** for the MAEIAGE film editors. Share it with the service-account email as *Editor* (or add the account as a member of the shared drive).
 2. Put the folder id (`/folders/<id>`) into `config/app` → `exports.driveFolderId`.
 3. « Exporter les retenues vers Drive » on `/admin/videos` copies each selected video as `{mission}_{participantNumber}_{firstName}.mp4` and appends it to the spreadsheet **Index rushes An 68** created inside the folder. Re-running only exports videos not yet marked `exportedAt`.
+
+**Retention (day 60)**
+- The `retention` function runs daily at 04:00 Conakry. Objects older than `config/app.retention.days` (default 60) under `uploads/`, `videos/` and `staging/` are deleted and the matching `files.*` paths on `contributions` are set to null with a `purgedAt` stamp. `public/` and `thumbs/` are kept, so the Wall survives. `config/app.retention = { enabled: false }` pauses the job, `{ dryRun: true }` only logs. For the campaign the first deletions fall in late November 2026, on schedule for the 2 December milestone.
 
 **Alerts to the war room**
 - The `watchdog` function runs every 5 minutes and fires (once per hour per check, with a recovery message) on: moderation backlog above 2 000, moderation p95 above 2 h over the last two hours, snapshot older than 10 minutes. Each alert is a Cloud Logging error line starting with `[alert]` and, if `config/app` → `exports.alertWebhook` holds a Slack-compatible incoming-webhook URL, a message in that channel.

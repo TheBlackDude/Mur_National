@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Wipe every runtime store of guinea68 back to zero: contributions (with their history),
 // RTDB (counters, participant sequence, rate buckets, stats, alerts, locks), Storage
-// (staging/, public/, thumbs/, snapshot/, exports/) and anonymous Auth users.
+// (uploads/, videos/, staging/, public/, thumbs/, snapshot/, exports/) and anonymous Auth users.
 //
 // KEEPS: config/app, missions, missionTokens, staff accounts (any user with an e-mail or a
 // sign-in provider) and their claims. The Google Sheet and the Drive export folder are not
@@ -24,7 +24,7 @@ const PROJECT = 'guinea68'
 const BUCKET = 'guinea68.firebasestorage.app'
 const RTDB = 'https://guinea68-default-rtdb.europe-west1.firebasedatabase.app'
 const COLLECTIONS = ['contributions', 'reports', 'blocklist'] // history lives under contributions/{id}/history
-const PREFIXES = ['staging/', 'public/', 'thumbs/', 'snapshot/', 'exports/']
+const PREFIXES = ['uploads/', 'videos/', 'staging/', 'public/', 'thumbs/', 'snapshot/', 'exports/']
 
 // User ADC carries the quota project of whatever gcloud set last; Storage needs it to be this project.
 process.env.GOOGLE_CLOUD_QUOTA_PROJECT ??= PROJECT

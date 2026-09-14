@@ -47,6 +47,7 @@ Companion to `ARCHITECTURE.md`. Dates are real: today, 11 Sept 2026, is J‑14. 
 | 29 Sept | Checkpoint: 33 prefectures and 35 countries lit, else activate contingency (kiosk push in missing prefectures, mission calls) | SGG |
 | 1 Oct | Certified figure rehearsal; screen feed rehearsal at the roundabout | MuduPay + MCENI |
 | **2 Oct** | **National figure revealed on the giant screen, RTG and in 51 missions** | Présidence |
+| 4 Oct | Cloud Functions runtime moved from Node 20 to Node 22 (Node 20 decommissioned 30 Oct 2026) and redeployed; retention job verified in dry run | MuduPay |
 | 9 Oct | Retrospective with SGG/DCI/MAEIAGE/MCENI; rushes handed to the film editors | All |
 | 31 Oct | Sovereign copy verified on the national DC | MuduPay |
 | 2 Dec | Originals deleted (day 60), final acceptance | MuduPay + SGG |

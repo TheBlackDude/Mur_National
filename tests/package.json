@@ -1,0 +1,13 @@
+{
+  "name": "mur-national-tests",
+  "private": true,
+  "type": "module",
+  "description": "Security-rules tests for Firestore, Storage and Realtime Database, run against the Firebase emulators.",
+  "scripts": {
+    "test": "npx --yes firebase-tools@latest emulators:exec --only firestore,storage,database --project guinea68 \"node --test --test-concurrency=1 rules/*.test.mjs\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "firebase": "^12.0.0"
+  }
+}

@@ -2,7 +2,9 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     function signedIn() { return request.auth != null; }
-    function isStaff() { return signedIn() && (request.auth.token.moderator == true || request.auth.token.editor == true || request.auth.token.maeiage == true || request.auth.token.admin == true); }
+    // token.get(): a missing claim reads as false instead of raising an evaluation error on every citizen request.
+    function hasRole(role) { return signedIn() && request.auth.token.get(role, false) == true; }
+    function isStaff() { return hasRole('moderator') || hasRole('editor') || hasRole('maeiage') || hasRole('admin'); }
 
     // A device may only write under its own uid: the framed JPEG under 2 MB, or a video selfie clip under 80 MB.
     match /uploads/{uid}/{file} {

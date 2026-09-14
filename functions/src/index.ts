@@ -12,4 +12,4 @@ export { snapshot } from './snapshot.js'
 export { missionInfo, submitVideo, selectVideo } from './video.js'
 export { exportDaily, exportDailyNow, exportSelected } from './exports.js'
 export { watchdog } from './watchdog.js'
-// D7: retention (60 days)
+export { retention } from './retention.js'
