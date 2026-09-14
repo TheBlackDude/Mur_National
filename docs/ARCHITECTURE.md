@@ -148,7 +148,7 @@ mur-national/
 2. Deploy `web/dist` to GitHub Pages (`actions/deploy-pages`). Netlify alternative: connect the repo, build `npm run build`, publish `web/dist`.
 3. `firebase deploy --only functions,firestore,storage,database` with a service-account secret.
 
-Custom domain `guineen68.com`: CNAME to GitHub Pages / Netlify, HTTPS automatic. Add the domain to Firebase Auth authorized domains and App Check.
+Static site on Firebase Hosting (site `guinea68`, custom domain `guineen68.com`, HTTPS automatic, `**` rewritten to index.html so shared links return 200). The old GitHub Pages deployment only redirects github.io links to the domain. Add the domain to Firebase Auth authorized domains and App Check.
 
 Environments: `mur-national-staging` and `mur-national-prod` Firebase projects; `main` → prod, `develop` → staging.
 

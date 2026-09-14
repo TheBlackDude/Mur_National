@@ -50,7 +50,7 @@ gcloud storage buckets update gs://guinea68.firebasestorage.app --cors-file=scri
 | appId | `VITE_FIREBASE_APP_ID` |
 | databaseURL (from step 4) | `VITE_FIREBASE_DATABASE_URL` |
 
-`VITE_BASE` is `/` now that the site is served from `guineen68.com` (it was `/Mur_National/` on github.io).
+The site is served by Firebase Hosting from `guineen68.com` (base `/`). The github.io deployment is kept only as a redirect.
 
 ## 7. App Check (bot protection)
 Done with reCAPTCHA Enterprise, which has an API, instead of classic reCAPTCHA v3, which only has a web console:
