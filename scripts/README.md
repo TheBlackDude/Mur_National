@@ -30,3 +30,17 @@ node scripts/qr-posters.mjs --base=https://guineen68.com
 ```
 
 The QR carries the full invite link (with the token). The URL printed under the QR is the token-less mission page, so a poster never exposes the token in clear text; scanning is the way in. Palette and layout follow the MuduPay identity with the tricolour strip; text uses Helvetica, which covers French accents.
+
+## Reset every store to zero (test rounds, pre-launch)
+
+```
+node scripts/reset-data.mjs          # dry run: prints counts, deletes nothing
+node scripts/reset-data.mjs --yes    # deletes contributions (+history), reports, blocklist,
+                                     # the whole RTDB (counters, seq, rate, stats, alerts, locks),
+                                     # Storage staging/ public/ thumbs/ snapshot/ exports/, anonymous users
+```
+
+Keeps `config/app`, `missions`, `missionTokens` and every staff account (any user with an e-mail or provider).
+`--keep-users` leaves anonymous users in place. The export Google Sheet and the Drive folder are cleared by hand.
+Participant numbers restart at 1; `snapshot/latest.json` is rebuilt by the scheduled function within 2 minutes.
+Run it with the gcloud ADC of an owner of `guinea68`.
