@@ -40,7 +40,9 @@ async function verifyMission(code: unknown, token: unknown): Promise<string> {
  * Image processing (thumb, rendition, pHash, SafeSearch) happens in onPhotoUploaded on the JPEG;
  * for a video selfie that JPEG is the framed poster and the clip is published at approval.
  */
-export const submitContribution = onCall<Req>(async (req) => {
+// Two warm instances for the week (24 Sept → 3 Oct): the D7 load test put p95 at 4 s only because of cold starts
+// (median 1.35 s). Idle instances cost a few dollars a week each; set back to 0 after 3 Oct.
+export const submitContribution = onCall<Req>({ minInstances: 2 }, async (req) => {
   const { uid, token } = requireAuth(req)
   const d = req.data
   if (!d?.path?.startsWith(`uploads/${uid}/`) || !d.path.endsWith('.jpg') || d.path.includes('..')) throw new HttpsError('invalid-argument', 'Bad path')
