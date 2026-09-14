@@ -6,6 +6,7 @@
 #   scripts/load/remote.sh submissions               # 50/s for 60 s
 #   scripts/load/remote.sh viewers                   # 2 000 viewers for 4 min
 #   scripts/load/remote.sh both                      # viewers, then submissions on top after 75 s
+#   scripts/load/remote.sh signup 300                # more users, from Cloud Shell's IP, merged into users.json
 #   RATE=20 DURATION=30s scripts/load/remote.sh submissions
 #
 # Results: scripts/out/load/results/<scenario>-<timestamp>.txt (k6 summary) and .json (--summary-export).
@@ -41,6 +42,23 @@ run() { # scenario, extra env
   grep -E "✓|✗|http_req_failed|_ms\.|participant|rate_limited|checks" "scripts/out/load/results/$name-$stamp.txt" | head -40
 }
 
+# signup N: create N anonymous users from Cloud Shell's IP (Identity Toolkit throttles ~100 rapid sign-ups per IP)
+# and merge them into scripts/out/load/users.json. Needs the web API key from web/.env (public by design).
+if [ "$what" = signup ]; then
+  n="${2:-200}"
+  key=$(grep '^VITE_FIREBASE_API_KEY=' web/.env | cut -d= -f2)
+  echo "» $n anonymous sign-ups from Cloud Shell"
+  cs_ssh "ok=0; : > /tmp/users.jsonl; wait=5; i=0; while [ \$ok -lt $n ]; do r=\$(curl -s -X POST 'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=$key' -H 'Content-Type: application/json' -d '{\"returnSecureToken\":true}'); if echo \"\$r\" | grep -q localId; then echo \"\$r\" | tr -d '\n' >> /tmp/users.jsonl; echo >> /tmp/users.jsonl; ok=\$((ok+1)); wait=5; sleep 0.3; else echo \"throttled at \$ok, waiting \$wait s\"; sleep \$wait; wait=\$((wait*2)); [ \$wait -gt 120 ] && wait=120; fi; done; echo \"\$ok users created\"; cat /tmp/users.jsonl" \
+    | awk '/^\{/' > /tmp/mur-signups.jsonl
+  node -e '
+    const fs = require("fs"); const f = "scripts/out/load/users.json";
+    const pool = fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, "utf8")) : { createdAt: new Date().toISOString(), appCheck: null, users: [] };
+    const seen = new Set(pool.users.map((u) => u.uid)); let added = 0;
+    for (const line of fs.readFileSync("/tmp/mur-signups.jsonl", "utf8").split("\n")) { if (!line.trim()) continue; const j = JSON.parse(line); if (seen.has(j.localId)) continue; pool.users.push({ uid: j.localId, idToken: j.idToken, refreshToken: j.refreshToken }); added++; }
+    fs.writeFileSync(f, JSON.stringify(pool)); console.log(`${added} users merged · pool = ${pool.users.length} users · ${pool.users.length * 5} submissions`);'
+  exit 0
+fi
+
 case "$what" in
   submissions) run submissions "RATE=${RATE:-50}" "DURATION=${DURATION:-60s}" ;;
   viewers) run viewers "VIEWERS=${VIEWERS:-2000}" "HOLD=${HOLD:-4m}" ;;
@@ -49,6 +67,6 @@ case "$what" in
     sleep 75
     run submissions "RATE=${RATE:-50}" "DURATION=${DURATION:-60s}"
     wait ;;
-  *) echo "usage: $0 submissions|viewers|both"; exit 1 ;;
+  *) echo "usage: $0 submissions|viewers|both|signup N"; exit 1 ;;
 esac
 echo "» results in scripts/out/load/results/*-$stamp.*"

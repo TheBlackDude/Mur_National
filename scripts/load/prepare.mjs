@@ -4,6 +4,9 @@
 //
 //   node scripts/load/prepare.mjs --users=600            # 600 users = 3 000 submissions at 5 per user per hour
 //   node scripts/load/prepare.mjs --users=0              # only regenerate the test images
+//   node scripts/load/prepare.mjs --users=600 --append   # top up a pool created less than 50 min ago
+//   node scripts/load/prepare.mjs --refresh             # new ID tokens for the whole pool (run right before k6)
+//   --pace=300 milliseconds between sign-ups (Auth throttles bursts from one IP)
 //   APPCHECK_DEBUG_TOKEN=<uuid> node scripts/load/prepare.mjs --users=600
 //
 // App Check: the callables enforce it. The script first asks the Admin SDK (your gcloud ADC, signing as the
@@ -24,6 +27,7 @@ const IMAGES = 20
 
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.replace(/^--/, '').split('=')))
 const USERS = Number(args.users ?? 600)
+const PACE_MS = Number(args.pace ?? 300)
 const env = Object.fromEntries(readFileSync(new URL('../../web/.env', import.meta.url), 'utf8').split('\n').filter((l) => l.includes('=')).map((l) => { const i = l.indexOf('='); return [l.slice(0, i).trim(), l.slice(i + 1).trim()] }))
 const API_KEY = env.VITE_FIREBASE_API_KEY
 if (!API_KEY) { console.error('web/.env has no VITE_FIREBASE_API_KEY'); process.exit(1) }
@@ -59,16 +63,30 @@ async function signUp() {
   const { localId, idToken, refreshToken } = await res.json()
   return { uid: localId, idToken, refreshToken }
 }
-async function users() {
-  const out = []
-  const PAR = 16
-  for (let i = 0; i < USERS; i += PAR) {
-    const batch = await Promise.all(Array.from({ length: Math.min(PAR, USERS - i) }, signUp))
-    out.push(...batch)
-    if ((i / PAR) % 10 === 0) process.stdout.write(`\r${out.length}/${USERS} users`)
+// Identity Toolkit throttles bursts from one IP (TOO_MANY_ATTEMPTS_TRY_LATER) well under the hourly quota:
+// one sign-up at a time, a short pause between them, exponential back-off on a throttle, progress saved as it goes.
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+async function users(existing, appCheck) {
+  const out = [...existing]
+  let wait = 5_000
+  while (out.length < USERS) {
+    try {
+      out.push(await signUp())
+      wait = 5_000
+      if (out.length % 10 === 0) { process.stdout.write(`\r${out.length}/${USERS} users`); save(appCheck, out) }
+      await sleep(PACE_MS)
+    } catch (e) {
+      if (!String(e.message).includes('TOO_MANY_ATTEMPTS')) throw e
+      process.stdout.write(`\r${out.length}/${USERS} users · throttled, waiting ${wait / 1000} s   `)
+      await sleep(wait)
+      wait = Math.min(wait * 2, 120_000)
+    }
   }
-  console.log(`\r${out.length} anonymous users created`)
+  console.log(`\r${out.length} anonymous users in the pool (${out.length - existing.length} new)`)
   return out
+}
+function save(appCheck, pool) {
+  writeFileSync(new URL('users.json', OUT), JSON.stringify({ createdAt: new Date().toISOString(), appCheck, users: pool }))
 }
 
 // 3. App Check token: Admin SDK first, debug token second.
@@ -95,9 +113,36 @@ async function appCheckToken() {
   return token
 }
 
+// --refresh: new ID tokens for every user of the pool (refresh tokens do not expire), for a run more than an hour later.
+async function refreshAll() {
+  const prev = JSON.parse(readFileSync(new URL('users.json', OUT), 'utf8'))
+  const appCheck = process.env.APPCHECK_DEBUG_TOKEN ? await appCheckToken() : prev.appCheck
+  let n = 0
+  for (const u of prev.users) {
+    const res = await fetch(`https://securetoken.googleapis.com/v1/token?key=${API_KEY}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ grant_type: 'refresh_token', refresh_token: u.refreshToken }),
+    })
+    if (!res.ok) { console.warn(`refresh failed for ${u.uid}: ${res.status}`); continue }
+    const j = await res.json()
+    u.idToken = j.id_token; u.refreshToken = j.refresh_token; n++
+    if (n % 25 === 0) process.stdout.write(`\r${n}/${prev.users.length} refreshed`)
+    await sleep(PACE_MS / 3)
+  }
+  save(appCheck, prev.users)
+  console.log(`\r${n}/${prev.users.length} tokens refreshed · users.json rewritten`)
+}
+
 await images()
+if ('refresh' in args) { await refreshAll(); process.exit(0) }
 if (USERS === 0) { console.log('images only (--users=0)'); process.exit(0) }
+// --append keeps the users of a pool younger than 50 minutes (their tokens still cover a run) and fills up to --users.
+let existing = []
+try {
+  const prev = JSON.parse(readFileSync(new URL('users.json', OUT), 'utf8'))
+  if ('append' in args && Date.now() - Date.parse(prev.createdAt) < 50 * 60_000) existing = prev.users
+} catch { /* no pool yet */ }
 const appCheck = await appCheckToken()
-const pool = await users()
-writeFileSync(new URL('users.json', OUT), JSON.stringify({ createdAt: new Date().toISOString(), appCheck, users: pool }))
-console.log(`scripts/out/load/users.json written · tokens expire in 1 h · run: k6 run scripts/load/submissions.js`)
+const pool = await users(existing, appCheck)
+save(appCheck, pool)
+console.log(`scripts/out/load/users.json written · tokens expire 1 h after creation · ${pool.length * 5} submissions possible`)
+console.log('run: scripts/load/remote.sh both   (or: k6 run scripts/load/submissions.js)')
