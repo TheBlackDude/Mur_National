@@ -8,7 +8,7 @@ Companion to `ARCHITECTURE.md`. Dates are real: today, 11 Sept 2026, is J‑14. 
 
 | KPI | Target | Communication threshold | Measured by |
 |---|---|---|---|
-| Validated selfies | 100 000 | 50 000 | `counters/national` (approved only) |
+| Validated selfies | 500 000 | 50 000 | `counters/national` (approved only) |
 | Territorial coverage | 44 / 44 prefectures on the Wall before 2 Oct | 33 by 29 Sept | `counters/prefectures` > 0 |
 | Diaspora | contributions from the 51 mission countries | 35 countries | `counters/countries` > 0 |
 | Diaspora videos | 500 usable 60–90 s videos | 250 | `selected == true` |

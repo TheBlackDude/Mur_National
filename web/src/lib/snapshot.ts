@@ -51,7 +51,7 @@ export type AppConfig = {
   degraded: boolean
   targets: { national: number; perPrefecture: number }
 }
-const DEFAULTS: AppConfig = { launchAt: null, revealAt: null, degraded: false, targets: { national: 100_000, perPrefecture: 1_000 } }
+const DEFAULTS: AppConfig = { launchAt: null, revealAt: null, degraded: false, targets: { national: 500_000, perPrefecture: 1_000 } }
 
 export function useAppConfig(): AppConfig {
   const [cfg, setCfg] = useState<AppConfig>(DEFAULTS)

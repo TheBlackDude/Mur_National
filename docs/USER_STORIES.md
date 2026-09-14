@@ -462,7 +462,7 @@ Acceptance criteria
 
 - The number updates within 2 s of an approval, without reload, on home and screen.
 - Count-up animation between values; respects prefers-reduced-motion.
-- The progress bar shows the share of the 100 000 target; the label shows the communication threshold at 50 000 as a tick.
+- The progress bar shows the share of the 500 000 target; the label shows the communication threshold at 50 000 as a tick.
 
 UX
 
