@@ -61,7 +61,7 @@ gcloud recaptcha keys create --web --display-name="Mur National" --domains=thebl
 ```
 The site key goes in `VITE_RECAPTCHA_SITE_KEY`; the client uses `ReCaptchaEnterpriseProvider`. `guineen68.com` and `www.guineen68.com` were added to the key on 14 Sept 2026 (`gcloud recaptcha keys update`).
 Enterprise is free up to 10 000 assessments a month, then about 1 USD per 1 000; App Check tokens last an hour, so a week at 100 000 participants costs on the order of 100 USD.
-Leave enforcement in the App Check → APIs tab in **monitoring** until the D7 load test; callables already enforce App Check in code. After the load test passes, switch Cloud Storage and Cloud Firestore to **Enforced** in that tab (Realtime Database stays unenforced: the giant screen and the widget read the counter without a token).
+Enforcement in the App Check → APIs tab: **Cloud Firestore → Enforced** (every Firestore read goes through the web SDK, which attaches the token; a phone where reCAPTCHA never loads falls back to the snapshot). **Cloud Storage and Realtime Database stay Unenforced**: the snapshot JSON, every Wall image (`thumbUrl`/`publicUrl` in `<img>` tags), the giant screen and the partner widget (RTDB REST) are read by plain URL with no App Check header, and enforcement answers them with 401. Verified on 14 Sept 2026: enabling them broke the public reads. Their security rules already limit what an anonymous reader can see. Callables enforce App Check in code.
 For the k6 load test the callables need a token the laptop can mint: register a **debug token** (App Check → Apps → web app → ⋮ → Manage debug tokens) and pass it as `APPCHECK_DEBUG_TOKEN` to `scripts/load/prepare.mjs`; delete it once the test is over.
 
 ## 8. Push the web config to GitHub
