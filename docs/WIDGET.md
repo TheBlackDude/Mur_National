@@ -6,7 +6,7 @@ One script tag renders the live national counter with a link to the studio. Unde
 <script src="https://guineen68.com/widget.js" data-lang="fr" async></script>
 ```
 
-Until the custom domain is live, use `https://theblackdude.github.io/Mur_National/widget.js`.
+The old `https://theblackdude.github.io/Mur_National/widget.js` URL redirects to the domain above.
 
 Attributes:
 

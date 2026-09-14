@@ -78,7 +78,7 @@
      "dev":["RTDB transaction on seq/participant inside submitContribution (functions/src/lib.ts)."]},
     {"id":"S2.6","epic":"E2","persona":"citizen","title":"Share my souvenir card on WhatsApp","day":"D2","priority":"Must",
      "story":"As a citizen, I want to share my framed photo with my number on WhatsApp, Facebook or TikTok in one tap, so that my friends join.",
-     "ac":["On Android Chrome and iOS Safari the share sheet opens with the JPEG and a text « #FierDetreGuineen · Participant n°48 213 · fierdetreguineen.gn ».","Where file sharing is unsupported the card downloads and a tip explains how to share it.","The card carries the frame, the number band in primary blue with the number in gold, and the site URL."],
+     "ac":["On Android Chrome and iOS Safari the share sheet opens with the JPEG and a text « #FierDetreGuineen · Participant n°48 213 · guineen68.com ».","Where file sharing is unsupported the card downloads and a tip explains how to share it.","The card carries the frame, the number band in primary blue with the number in gold, and the site URL."],
      "ux":["Card ratio 1:1.22 so it fits WhatsApp status and Instagram feed.","After sharing, offer « Nouveau selfie » and « Voir le Mur »."],
      "dev":["lib/image.ts souvenirCard() and shareOrDownload(); analytics event shared with the channel when known."]},
     {"id":"S2.7","epic":"E2","persona":"citizen","title":"Understand every error in one line","day":"D2","priority":"Must",

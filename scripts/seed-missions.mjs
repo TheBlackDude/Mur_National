@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url'
 const PROJECT = 'guinea68'
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const args = process.argv.slice(2)
-const BASE = (args.find((a) => a.startsWith('--base='))?.slice(7) ?? 'https://theblackdude.github.io/Mur_National').replace(/\/$/, '')
+const BASE = (args.find((a) => a.startsWith('--base='))?.slice(7) ?? 'https://guineen68.com').replace(/\/$/, '')
 const ROTATE = args.includes('--rotate')
 const FS = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents`
 

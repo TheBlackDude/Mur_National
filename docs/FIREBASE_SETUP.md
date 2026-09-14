@@ -12,7 +12,7 @@ Do the steps in this order; later steps depend on earlier ones.
 1. Build → **Authentication** → Get started.
 2. Sign-in method → enable **Anonymous**.
 3. Sign-in method → enable **Google**, choose the project support email, save.
-4. Settings tab → **Authorized domains** → add `theblackdude.github.io` (and `fierdetreguineen.gn` when the domain exists). `localhost` is already there.
+4. Settings tab → **Authorized domains** → add `theblackdude.github.io`, `guineen68.com` and `www.guineen68.com`. `localhost` is already there.
 
 ## 3. Cloud Firestore
 1. Build → **Firestore Database** → Create database.
@@ -50,7 +50,7 @@ gcloud storage buckets update gs://guinea68.firebasestorage.app --cors-file=scri
 | appId | `VITE_FIREBASE_APP_ID` |
 | databaseURL (from step 4) | `VITE_FIREBASE_DATABASE_URL` |
 
-Keep `VITE_BASE=/Mur_National/` while the site lives on github.io.
+`VITE_BASE` is `/` now that the site is served from `guineen68.com` (it was `/Mur_National/` on github.io).
 
 ## 7. App Check (bot protection)
 Done with reCAPTCHA Enterprise, which has an API, instead of classic reCAPTCHA v3, which only has a web console:
@@ -59,7 +59,7 @@ gcloud services enable recaptchaenterprise.googleapis.com firebaseappcheck.googl
 gcloud recaptcha keys create --web --display-name="Mur National" --domains=theblackdude.github.io,localhost --integration-type=score --project guinea68
 # then register the printed key with App Check (PATCH .../apps/<appId>/recaptchaEnterpriseConfig, siteKey=<key>)
 ```
-The site key goes in `VITE_RECAPTCHA_SITE_KEY`; the client uses `ReCaptchaEnterpriseProvider`. Add `fierdetreguineen.gn` to the key's domains when the domain exists (`gcloud recaptcha keys update`).
+The site key goes in `VITE_RECAPTCHA_SITE_KEY`; the client uses `ReCaptchaEnterpriseProvider`. `guineen68.com` and `www.guineen68.com` were added to the key on 14 Sept 2026 (`gcloud recaptcha keys update`).
 Enterprise is free up to 10 000 assessments a month, then about 1 USD per 1 000; App Check tokens last an hour, so a week at 100 000 participants costs on the order of 100 USD.
 Leave enforcement in the App Check → APIs tab in **monitoring** until the D7 load test; callables already enforce App Check in code.
 
@@ -112,7 +112,7 @@ The Cloud Vision, Google Sheets and Google Drive APIs are enabled on `guinea68`.
 
 ## Checklist
 - [ ] Blaze plan and budget alert
-- [ ] Anonymous + Google sign-in, github.io authorised
+- [ ] Anonymous + Google sign-in, github.io and guineen68.com authorised
 - [ ] Firestore, Realtime Database, Storage in europe-west1
 - [ ] Web app registered, `web/.env` filled, `scripts/gh-vars.sh` run
 - [x] reCAPTCHA Enterprise key and App Check registration

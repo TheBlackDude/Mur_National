@@ -32,7 +32,8 @@ Companion to `ARCHITECTURE.md`. Dates are real: today, 11 Sept 2026, is J‑14. 
 
 | Date | Milestone | Owner |
 |---|---|---|
-| 13 Sept | Scope freeze signed, 3 frames validated, domain `fierdetreguineen.gn` requested | DCI + MuduPay |
+| 13 Sept | Scope freeze signed, 3 frames validated | DCI + MuduPay |
+| 14 Sept | Domain `guineen68.com` bought on Squarespace, DNS pointed at GitHub Pages | MuduPay |
 | 15 Sept | Domain live on the static host (blank PWA), Firebase projects created | MuduPay |
 | 17 Sept | Mission contacts and country list received from the MAEIAGE | MAEIAGE |
 | 18 Sept | v1.0 on staging; moderator accounts created | MuduPay + DCI |

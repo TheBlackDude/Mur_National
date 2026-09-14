@@ -268,7 +268,7 @@ As a citizen, I want to share my framed photo with my number on WhatsApp, Facebo
 
 Acceptance criteria
 
-- On Android Chrome and iOS Safari the share sheet opens with the JPEG and a text « #FierDetreGuineen · Participant n°48 213 · fierdetreguineen.gn ».
+- On Android Chrome and iOS Safari the share sheet opens with the JPEG and a text « #FierDetreGuineen · Participant n°48 213 · guineen68.com ».
 - Where file sharing is unsupported the card downloads and a tip explains how to share it.
 - The card carries the frame, the number band in primary blue with the number in gold, and the site URL.
 
