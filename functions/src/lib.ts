@@ -8,6 +8,10 @@ export const rtdb = getDatabase()
 export const bucket = () => getStorage().bucket()
 export { FieldValue }
 
+/** public/, thumbs/ and their staging copies are content-addressed by contribution id and never change: browsers
+ *  and Google's edge keep them for a year, so a Wall view costs one request per thumbnail per device, not per visit. */
+export const IMMUTABLE_CACHE = 'public, max-age=31536000, immutable'
+
 export type Role = 'moderator' | 'editor' | 'maeiage' | 'admin'
 
 export function requireAuth(req: CallableRequest) {

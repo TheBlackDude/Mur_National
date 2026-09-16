@@ -3,7 +3,7 @@ import { logger } from 'firebase-functions/v2'
 import { getApp } from 'firebase-admin/app'
 import { Timestamp, type DocumentReference } from 'firebase-admin/firestore'
 import sharp from 'sharp'
-import { bucket, db, FieldValue } from './lib.js'
+import { bucket, db, FieldValue, IMMUTABLE_CACHE } from './lib.js'
 import { approveContribution } from './moderate.js'
 
 type Likelihood = 'UNKNOWN' | 'VERY_UNLIKELY' | 'UNLIKELY' | 'POSSIBLE' | 'LIKELY' | 'VERY_LIKELY'
@@ -20,7 +20,9 @@ const DUPLICATE_WINDOW_MS = 48 * 3_600_000
  * review, clean kiosk items get the L1 fast lane, and nothing is auto-approved unless
  * config/app.kioskAutoApprove is on. Files only become public at approval (moderate.ts).
  */
-export const onPhotoUploaded = onObjectFinalized({ memory: '1GiB', timeoutSeconds: 60 }, async (event) => {
+// cpu 1 + concurrency 4: with the default fractional CPU an instance processes one photo at a time, so 50 instances
+// cap at ~25 photos/s. Four sharp pipelines fit in 1 GiB (a 1600 px JPEG decodes to ~10 MB); 100 instances leave margin.
+export const onPhotoUploaded = onObjectFinalized({ memory: '1GiB', cpu: 1, concurrency: 4, maxInstances: 100, timeoutSeconds: 60 }, async (event) => {
   const path = event.data.name
   if (!path?.startsWith('uploads/') || !path.endsWith('.jpg')) return
   if (event.data.contentType !== 'image/jpeg') return
@@ -51,13 +53,14 @@ export async function renderRenditions(buf: Buffer, id: string): Promise<Buffer>
     sharp(buf).rotate().resize(1080, 1080, { fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 82 }).toBuffer(),
   ])
   await Promise.all([
-    bucket().file(`staging/thumbs/${id}.jpg`).save(thumb, { contentType: 'image/jpeg' }),
-    bucket().file(`staging/public/${id}.jpg`).save(rendition, { contentType: 'image/jpeg' }),
+    bucket().file(`staging/thumbs/${id}.jpg`).save(thumb, { contentType: 'image/jpeg', metadata: { cacheControl: IMMUTABLE_CACHE } }),
+    bucket().file(`staging/public/${id}.jpg`).save(rendition, { contentType: 'image/jpeg', metadata: { cacheControl: IMMUTABLE_CACHE } }),
   ])
   return rendition
 }
 
-type Analysis = { phash: string; safeSearch: SafeSearch | null; config: { safeSearch: boolean; kioskAutoApprove: boolean } }
+type Config = { safeSearch: boolean; kioskAutoApprove: boolean; autoApproveClean: boolean }
+type Analysis = { phash: string; safeSearch: SafeSearch | null; config: Config }
 
 export async function analyze(buf: Buffer, rendition: Buffer): Promise<Analysis> {
   const config = await appConfig()
@@ -88,7 +91,10 @@ export async function annotate(ref: DocumentReference, id: string, { phash, safe
     processedAt: FieldValue.serverTimestamp(),
   })
 
-  if (config.kioskAutoApprove && kiosk && clean && !duplicateOf && c.status === 'pending') {
+  // Auto-approval paths (both off by default): clean kiosk items, or every clean item when config/app.autoApproveClean
+  // is on — the volume lever for the week if the moderation backlog outgrows the team. Duplicates always wait for L2.
+  const auto = (config.kioskAutoApprove && kiosk) || config.autoApproveClean
+  if (auto && clean && !duplicateOf && c.status === 'pending') {
     const fresh = (await ref.get()).data()!
     await approveContribution(ref, fresh, { by: 'system', byEmail: null })
   }
@@ -109,13 +115,13 @@ export async function finishIfAlreadyProcessed(ref: DocumentReference, originalP
 }
 
 /** Feature flags editors can flip without a deploy. Defaults are the safe ones. */
-async function appConfig(): Promise<{ safeSearch: boolean; kioskAutoApprove: boolean }> {
+async function appConfig(): Promise<Config> {
   try {
     const d = (await db.doc('config/app').get()).data() ?? {}
-    return { safeSearch: d.safeSearch !== false, kioskAutoApprove: d.kioskAutoApprove === true }
+    return { safeSearch: d.safeSearch !== false, kioskAutoApprove: d.kioskAutoApprove === true, autoApproveClean: d.autoApproveClean === true }
   } catch (e) {
     logger.warn('config/app unreadable, using defaults', e)
-    return { safeSearch: true, kioskAutoApprove: false }
+    return { safeSearch: true, kioskAutoApprove: false, autoApproveClean: false }
   }
 }
 

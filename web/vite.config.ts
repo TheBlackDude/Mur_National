@@ -15,7 +15,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icon.svg', 'frames/*.png'],
+      includeAssets: ['icon.svg', 'icon-192.png', 'apple-touch-icon.png', 'frames/*.png'],
       manifest: {
         name: "Fier d'être Guinéen — Mur National",
         short_name: 'Fier Guinéen',
@@ -28,13 +28,17 @@ export default defineConfig({
         scope: base,
         icons: [
           { src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
-          // TODO(D1): add icon-192.png and icon-512.png exported from the DCI logo.
+          { src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {
         // Keep the shell offline-capable; never cache Firebase traffic.
         navigateFallback: `${base}index.html`,
         globPatterns: ['**/*.{js,css,html,svg,png,json}'],
+        // Screen-only and install-only assets stay out of every phone's precache (~700 KB on 3G).
+        globIgnores: ['**/logo-68-lg.png', '**/armoiries.svg', '**/qr-selfie.svg', '**/icon-512.png', '**/node_modules/**'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/firebasestorage\.googleapis\.com\/.*thumbs.*/,

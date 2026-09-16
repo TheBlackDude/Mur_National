@@ -35,6 +35,7 @@ Companion to `ARCHITECTURE.md`. Dates are real: today, 11 Sept 2026, is J‑14. 
 | 13 Sept | Scope freeze signed, 3 frames validated | DCI + MuduPay |
 | 14 Sept | Domain `guineen68.com` bought on Squarespace, DNS pointed at GitHub Pages | MuduPay |
 | 15 Sept | Domain live on the static host (blank PWA), Firebase projects created | MuduPay |
+| 16 Sept | Minister's decision: the Wall stays open as it is (≈ 180 contributions received during the tester round); `launchAt` moved to the past, the platform is considered live from this day | SGG + MuduPay |
 | 17 Sept | Mission contacts and country list received from the MAEIAGE | MAEIAGE |
 | 18 Sept | v1.0 on staging; moderator accounts created | MuduPay + DCI |
 | 19 Sept | Screen and RTG technical spec agreed (resolution, overlay zone, network at the roundabout) | MCENI/RTG |
@@ -97,7 +98,7 @@ Companion to `ARCHITECTURE.md`. Dates are real: today, 11 Sept 2026, is J‑14. 
 - **War room**: Slack/WhatsApp channel + Firebase console + dashboard on a screen. Rota of 2 engineers by 12 h shift, 24/7 from 24 Sept 18:00 to 3 Oct 08:00.
 - **Daily cadence**: 09:00 stand-up (MuduPay + DCI), 12:00 moderation backlog check, 18:00 « chiffre du jour » exported and validated by the SGG, 22:00 handover note.
 - **Release policy**: hotfixes only, deployed from `hotfix/*` after a staging smoke test; no schema changes; feature flags in `config/app` for anything risky (degraded mode, SafeSearch on/off, kiosk ceiling).
-- **Incident playbook**: (1) Wall slow → set `degraded = true`; (2) moderation backlog > 2 000 → open batch approve for kiosk submissions, call reserve moderators; (3) abuse wave → lower rate limit, block pHash cluster; (4) Firebase outage → `/ecran` keeps showing the last snapshot, static host unaffected.
+- **Incident playbook**: (0) home page slow or RTDB connection alerts → set `liveCounter = false`; (1) Wall slow → set `degraded = true`; (2) moderation backlog > 2 000 → open batch approve for kiosk submissions, call reserve moderators; (3) abuse wave → lower rate limit, block pHash cluster; (4) Firebase outage → `/ecran` keeps showing the last snapshot, static host unaffected.
 
 ## 7. After the week: the durable assets (v2, 2027)
 

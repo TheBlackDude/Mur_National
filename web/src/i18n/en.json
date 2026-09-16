@@ -267,5 +267,15 @@
   "admin.action.personality": "Marked Personality",
   "admin.action.unpersonality": "Personality removed",
   "admin.action.block": "Device blocked",
-  "admin.action.unblock": "Device unblocked"
+  "admin.action.unblock": "Device unblocked",
+  "nav.home": "Home",
+  "wall.retry": "Retry",
+  "wall.loading": "Updating…",
+  "wall.offline": "Slow or no connection. Check your network and try again.",
+  "screen.tagline": "Proud to be Guinean · Year 68",
+  "screen.republic": "Republic of Guinea",
+  "screen.latest": "Latest participant",
+  "screen.coverage": "{p} / {t} prefectures · {c} diaspora countries",
+  "screen.scan": "Scan to take part",
+  "screen.new": "New"
 }

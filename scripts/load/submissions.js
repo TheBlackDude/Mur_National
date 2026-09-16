@@ -49,6 +49,12 @@ export const options = {
   summaryTrendStats: ['avg', 'med', 'p(90)', 'p(95)', 'p(99)', 'max'],
 }
 
+export function setup() {
+  const need = Math.ceil(RATE * parseDuration(DURATION) / PER_USER)
+  if (pool.length < need) console.warn(`pool of ${pool.length} users covers ${pool.length * PER_USER} submissions; ${RATE}/s for ${DURATION} needs ${need} users — the rest will hit the hourly limit (429)`)
+}
+function parseDuration(d) { const m = /^(\d+)(s|m)$/.exec(d); return m ? Number(m[1]) * (m[2] === 'm' ? 60 : 1) : 60 }
+
 export default function () {
   const iter = exec.scenario.iterationInTest
   const user = pool[Math.floor(iter / PER_USER) % pool.length]

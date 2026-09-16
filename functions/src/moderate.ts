@@ -1,6 +1,6 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https'
 import type { DocumentReference, DocumentData } from 'firebase-admin/firestore'
-import { bucket, db, FieldValue, publicUrl, requireRole, rtdb } from './lib.js'
+import { bucket, db, FieldValue, IMMUTABLE_CACHE, publicUrl, requireRole, rtdb } from './lib.js'
 
 export type ModerateAction = 'approve' | 'reject' | 'review' | 'feature' | 'unfeature' | 'personality' | 'unpersonality' | 'block' | 'unblock'
 export type RejectReason = 'inappropriate' | 'not_person' | 'duplicate' | 'minor' | 'other'
@@ -25,10 +25,11 @@ export async function approveContribution(ref: DocumentReference, c: DocumentDat
   const thumbPath = `thumbs/${id}.jpg`, publicPath = `public/${id}.jpg`
   // Video selfies: the clip goes public next to its poster, keeping its extension.
   const videoPath = typeof c.files?.video === 'string' && c.files.video ? `public/${id}.${videoExt(c.files.video)}` : null
+  const immutable = { cacheControl: IMMUTABLE_CACHE }
   await Promise.all([
-    bucket().file(c.files.thumb).copy(bucket().file(thumbPath)),
-    bucket().file(c.files.public).copy(bucket().file(publicPath)),
-    ...(videoPath ? [bucket().file(c.files.video).copy(bucket().file(videoPath))] : []),
+    bucket().file(c.files.thumb).copy(bucket().file(thumbPath), immutable),
+    bucket().file(c.files.public).copy(bucket().file(publicPath), immutable),
+    ...(videoPath ? [bucket().file(c.files.video).copy(bucket().file(videoPath), immutable)] : []),
   ])
   await ref.update({
     status: 'approved',

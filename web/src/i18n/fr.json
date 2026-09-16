@@ -267,5 +267,15 @@
   "admin.action.personality": "Marqué Personnalité",
   "admin.action.unpersonality": "Personnalité retirée",
   "admin.action.block": "Appareil bloqué",
-  "admin.action.unblock": "Appareil débloqué"
+  "admin.action.unblock": "Appareil débloqué",
+  "nav.home": "Accueil",
+  "wall.retry": "Réessayer",
+  "wall.loading": "Mise à jour…",
+  "wall.offline": "Connexion lente ou coupée. Vérifiez votre réseau et réessayez.",
+  "screen.tagline": "Fier d’être Guinéen · An 68",
+  "screen.republic": "République de Guinée",
+  "screen.latest": "Dernier participant",
+  "screen.coverage": "{p} / {t} préfectures · {c} pays de la diaspora",
+  "screen.scan": "Scannez pour participer",
+  "screen.new": "Nouveau"
 }

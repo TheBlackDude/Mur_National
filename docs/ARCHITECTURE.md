@@ -61,7 +61,8 @@ contributions/{id}
 reports/{id}        contributionId, uid, reason, createdAt
 blocklist/{key}     type: "uid" | "phash" | "ip", reason, createdAt
 missions/{code}     name, country, token, qrUrl, contact
-config/app          frames[], targets{ national, perPrefecture }, launchAt, revealAt, degraded (bool)
+config/app          frames[], targets{ national, perPrefecture }, launchAt, revealAt, degraded (bool),
+                    liveCounter (bool, default true), safeSearch, kioskAutoApprove, autoApproveClean (bool, default false), retention{days}
 ```
 
 Indexes: `contributions(status, createdAt desc)`, `(status, prefecture, createdAt desc)`, `(status, country, createdAt desc)`, `(status, featured, createdAt desc)`, `(type, mission, selected)`.
@@ -80,8 +81,8 @@ rate/{uid}/{hourBucket}         -> 3               (max 5 submissions / device /
 
 ```
 uploads/{uid}/{id}.jpg          framed + watermarked by the browser, ≤ 400 KB   (owner write, function read)
-public/{id}.jpg                 1080px canonical rendition after approval        (public read)
-thumbs/{id}.jpg                 400px, ~50 KB, used by the Wall and screen       (public read)
+public/{id}.jpg                 1080px canonical rendition after approval        (public read, Cache-Control immutable 1 year)
+thumbs/{id}.jpg                 400px, ~30 KB, used by the Wall and screen       (public read, Cache-Control immutable 1 year)
 videos/{mission}/{id}.mp4       diaspora videos, ≤ 150 MB                        (owner write, staff read)
 snapshot/latest.json            counters + last 120 approved thumbs + per-region/country totals (public read, Cache-Control 60 s)
 exports/YYYY-MM-DD.csv          daily certified export                            (admin read)
@@ -96,7 +97,7 @@ exports/YYYY-MM-DD.csv          daily certified export                          
 3. Prefecture or country picker (offline lists bundled in the app).
 4. Upload to `uploads/{uid}/{id}.jpg` (App Check enforced), then call `submitContribution({path, frame, prefecture|country, consent, kiosk})`.
 5. The function checks blocklist + rate limit, reserves the participant number with an RTDB transaction, creates the `pending` doc and returns `{participantNumber}` in ~1 s. The card shows the number immediately.
-6. Storage trigger `onPhotoUploaded` runs asynchronously: sharp → thumb + 1080 px rendition, perceptual hash (near-duplicate check against the last 48 h), Vision SafeSearch. Results are written on the doc; obvious violations are flagged `review` instead of `pending`.
+6. Storage trigger `onPhotoUploaded` runs asynchronously (1 GiB, 1 vCPU, concurrency 4, up to 100 instances ≈ 200 photos/s): sharp → thumb + 1080 px rendition, perceptual hash (near-duplicate check against the last 48 h), Vision SafeSearch. Results are written on the doc; obvious violations are flagged `review` instead of `pending`. With `config/app.autoApproveClean` on, a SafeSearch-clean, non-duplicate photo is approved on the spot (the volume lever if the backlog outgrows the moderators; off by default).
 
 Browser-side compositing is the one-week trade-off: it is instant and free. Server re-rendering the frame from the raw photo (as the note promises) is a day of work later; human moderation covers tampering in the meantime.
 
@@ -109,7 +110,9 @@ Browser-side compositing is the one-week trade-off: it is instant and free. Serv
 ### 5.3 Counter, map, giant screen
 
 - `/` and `/ecran` subscribe to `counters/national` over RTDB: the number moves live on the 8‑Novembre screen and on the RTG overlay.
-- `snapshot` scheduled function (every 2 min): reads counters + last 120 approved thumbs, writes `snapshot/latest.json`. `/carte`, `/ecran` and the Wall's first paint read that one file. If `config/app.degraded` is set, the Wall serves only the snapshot: zero Firestore reads under exceptional load.
+- `snapshot` scheduled function (every 2 min): reads counters + last 120 approved thumbs, writes `snapshot/latest.json`. `/carte`, `/ecran` and the Wall's first paint read that one file. The browser keeps its last copy in `localStorage`, so a refresh on a slow link paints faces before any network answer. The Wall then upgrades to Firestore (12 s deadline per query); a failure or timeout leaves the snapshot on screen with a « Réessayer » link. If `config/app.degraded` is set, the Wall serves only the snapshot: zero Firestore reads under exceptional load.
+- Live counter: `/ecran` and the RTG overlay always hold an RTDB connection. `/` does too while `config/app.liveCounter` is true; set it to false to move every phone to the snapshot (polled once a minute) — one RTDB instance accepts 200 000 simultaneous connections, which a launch-day spike on the home page could reach. Either way a phone that gets no RTDB answer within 8 s polls the snapshot.
+- Hosting sends `Cache-Control: no-cache` for HTML (browsers used to keep `/` for an hour, so a deploy left phones asking for chunk files that no longer existed: blank Wall until the cache expired); hashed `/assets/**` are immutable for a year. A failed route chunk import triggers one automatic reload (`lazyRoute`, `vite:preloadError`).
 - Maps: inline SVG. Guinea prefectures from geoBoundaries ADM2 (simplified TopoJSON, ~120 KB), world countries from Natural Earth 110m. Missions light up when `counters/countries/{iso} > 0`.
 
 ### 5.4 Diaspora videos (MAEIAGE)
@@ -132,7 +135,22 @@ Browser-side compositing is the one-week trade-off: it is instant and free. Serv
 - Personal data: explicit public-display consent checkbox stored with a timestamp; minors only through supervised kiosks (`kiosk == true` and `minorSupervised`); no email/phone collected; retention policy and legal notice pages in FR/EN. Retention job deletes `uploads/` originals 60 days after the week.
 - Sovereignty gap to state openly to the client: the concept note promises hosting on the national Tier III data centre. This design runs on Google Cloud (`europe-west1`). Mitigation: a nightly Firestore export + `gsutil rsync` of Storage to a bucket or server in Conakry, so the State holds a complete sovereign copy, and the post-week platform can be migrated there.
 
-## 7. Repository and deployment
+## 7. Capacity notes (500 000 contributions in eight days)
+
+| Component | Ceiling that matters | Where we stand | Lever |
+|---|---|---|---|
+| `submitContribution` | 50 instances × 80 concurrent, median 1.35 s | 50/s sustained in the D7 test, 0 errors | `minInstances` 2 for the week; raise `maxInstances` in `index.ts` if p95 > 5 s |
+| `onPhotoUploaded` | 100 instances × 4 concurrent ≈ 200 photos/s | ~2 s per photo | memory/concurrency in `onPhotoUploaded.ts` |
+| Vision SafeSearch | 1 800 requests/min default quota (30/s) | throttled calls store `null` → item goes to L1 as unknown, never lost | request a quota raise on `vision.googleapis.com` before 25 Sept |
+| RTDB | 1 000 writes/s, 200 000 simultaneous connections | one transaction per submission + one per approval | `liveCounter=false` moves home-page readers to the snapshot |
+| Firestore | 10 000 writes/s per database, 1 write/s per document | distinct documents, indexed `createdAt` under the 500/s sequential-write hotspot limit | none needed |
+| Storage egress | ~30 KB per thumbnail view | thumbnails now immutable-cached by browsers and Google's edge | run `scripts/set-cache-control.mjs --yes` once for objects published before 16 Sept |
+| Human moderation | ~1 000 decisions/h per moderator with keyboard shortcuts | 500 000 in 8 days ≈ 2 600/h average, 10 000/h at peaks | `autoApproveClean` flag; reserve moderators; SafeSearch keeps the flagged ones in L2 |
+| Video selfies | 30 MB per play on the Wall, 80 MB per upload | few so far | keep the 40–90 s cap; consider `type == video` off the main Wall tab if egress grows |
+
+Budget order of magnitude at 500 000 photos: Storage ≈ 220 GB (originals + renditions), Firestore reads ≈ 2 per Wall visit, Functions ≈ 3 invocations per contribution. The egress line dominates and depends on cache hit rate, hence the immutable headers.
+
+## 8. Repository and deployment
 
 ```
 mur-national/
