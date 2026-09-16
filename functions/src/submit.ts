@@ -2,6 +2,7 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https'
 import { timingSafeEqual } from 'node:crypto'
 import { bucket, checkRate, db, FieldValue, isBlocked, nextParticipantNumber, requireAuth } from './lib.js'
 import { finishIfAlreadyProcessed } from './onPhotoUploaded.js'
+import { PREFECTURE_CODES, REGION_OF } from './prefectures.js'
 
 type Req = {
   path: string
@@ -19,7 +20,6 @@ type Req = {
   token?: string
 }
 
-const REGION_BY_PREFECTURE_PREFIX: Record<string, string> = { CKY: 'Conakry' }
 const VIDEO_EXT = /\.(mp4|webm|mov)$/i
 const VIDEO_MAX_BYTES = 80 * 1024 * 1024
 const VIDEO_MIN_SEC = 40, VIDEO_MAX_SEC = 90
@@ -49,6 +49,7 @@ export const submitContribution = onCall<Req>({ minInstances: 2 }, async (req) =
   if (!['A', 'B', 'C'].includes(d.frame)) throw new HttpsError('invalid-argument', 'Bad frame')
   if (!d.consent?.public) throw new HttpsError('failed-precondition', 'Consent required')
   if (!!d.prefecture === !!d.country) throw new HttpsError('invalid-argument', 'Exactly one of prefecture or country')
+  if (d.prefecture && !PREFECTURE_CODES.has(d.prefecture)) throw new HttpsError('invalid-argument', 'Unknown prefecture')
   const type: 'photo' | 'video' = d.type === 'video' ? 'video' : 'photo'
 
   let videoPath: string | null = null
@@ -98,7 +99,7 @@ export const submitContribution = onCall<Req>({ minInstances: 2 }, async (req) =
     status: 'pending',
     frame: d.frame,
     prefecture: d.prefecture ?? null,
-    region: d.prefecture ? (REGION_BY_PREFECTURE_PREFIX[d.prefecture.split('-')[0]] ?? null) : null, // filled properly by onPhotoUploaded from the prefecture table
+    region: d.prefecture ? (REGION_OF[d.prefecture] ?? null) : null, // the Wall's « Région » filter queries this field
     country: d.country ?? null,
     isDiaspora: !!d.country,
     mission,

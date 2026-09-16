@@ -277,5 +277,14 @@
   "screen.latest": "Latest participant",
   "screen.coverage": "{p} / {t} prefectures · {c} diaspora countries",
   "screen.scan": "Scan to take part",
-  "screen.new": "New"
+  "screen.new": "New",
+  "map.conakry": "Conakry",
+  "map.communes": "{n} of 5 communes on the Wall",
+  "map.ranking": "Prefecture ranking",
+  "map.rankingDiaspora": "Most active diaspora countries",
+  "map.noneYet": "No approved contribution yet.",
+  "map.leader": "Leading",
+  "map.newPref": "New prefecture (decree of 20 August 2026)",
+  "map.legendMax": "most active",
+  "map.regionCount": "{n} regions"
 }

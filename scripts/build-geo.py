@@ -1,13 +1,27 @@
 #!/usr/bin/env python3
-"""Builds the compact SVG geometry for /carte from geoBoundaries (Guinea ADM2) and Natural Earth 110m (world).
+"""Builds the compact SVG geometry for /carte from geoBoundaries (Guinea ADM2 + ADM3) and Natural Earth 110m (world).
 
-Usage: python3 scripts/build-geo.py <gin_adm2_simplified.geojson> <ne_110m_admin_0_countries.geojson>
-Writes web/src/data/geo/guinea.json and web/src/data/geo/world.json. Standard library only.
+Usage: python3 scripts/build-geo.py <gin_adm2_simplified.geojson> <ne_110m_admin_0_countries.geojson|-> [gin_adm3_simplified.geojson]
+Writes web/src/data/geo/guinea.json and (unless NE is "-") web/src/data/geo/world.json. Standard library only.
+
+The eleven prefectures created by the decree of 20 Aug 2026 have no ADM2 polygon yet: their former sub-prefecture
+polygon (ADM3, geoBoundaries 2021) is used and drawn on top of the parent prefecture, so no geometry subtraction is
+needed. Sources: https://www.geoboundaries.org/api/current/gbOpen/GIN/ADM2/ and /ADM3/.
 """
 import json, math, sys, unicodedata
 
 ROOT = __file__.rsplit('/scripts/', 1)[0]
 GIN, NE = sys.argv[1], sys.argv[2]
+ADM3 = sys.argv[3] if len(sys.argv) > 3 else None
+
+# New prefecture code -> (ADM3 shapeName, parent prefecture code). Kouankan was a sub-prefecture of Macenta and now sits
+# in the Beyla region; the others were sub-prefectures of the prefecture that shares their region or its capital.
+NEW_FROM_ADM3 = {
+    'KAM': ('Kamsar', 'BOK'), 'TIM': ('Timbo', 'MAM'),
+    'TOK': ('Tokounou', 'KAN'), 'DIA': ('Dialakoro', 'KAN'), 'SAB': ('Sabadou Baranama', 'KAN'),
+    'DOK': ('Doko', 'SIG'), 'SGN': ('Siguirini', 'SIG'), 'KTN': ('Kintinian', 'SIG'),
+    'SNK': ('Sinko', 'BEY'), 'KKN': ('Kouankan', 'MAC'), 'KAR': ('Karala', 'BEY'),
+}
 
 def strip(s):
     return ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn').lower()
@@ -81,10 +95,23 @@ for f in gin['features']:
     shapes.append({'code': code, 'name': name_of[code], 'd': path(rs, proj_g, 1.2), 'cx': round(cx, 1), 'cy': round(cy, 1)})
 shapes.sort(key=lambda s: s['code'])
 if unmatched: print('UNMATCHED Guinea names:', unmatched)
+
+# Overlays for the 2026 prefectures, appended after the parents so SVG paint order puts them on top.
+if ADM3:
+    adm3 = {strip(f['properties']['shapeName']): f for f in json.load(open(ADM3))['features']}
+    for code, (adm3_name, parent) in NEW_FROM_ADM3.items():
+        f = adm3.get(strip(adm3_name))
+        if not f: print('MISSING ADM3 shape:', adm3_name); continue
+        rs = rings(f['geometry'])
+        cx, cy = centroid(rs, proj_g)
+        shapes.append({'code': code, 'name': name_of.get(code, adm3_name), 'd': path(rs, proj_g, 1.2), 'cx': round(cx, 1), 'cy': round(cy, 1), 'parent': parent})
+else:
+    print('No ADM3 file: the 2026 prefectures have no shape on the map')
 guinea = {'viewBox': f'0 0 {W:.0f} {H:.0f}', 'shapes': shapes}
 json.dump(guinea, open(f'{ROOT}/web/src/data/geo/guinea.json', 'w'), ensure_ascii=False, separators=(',', ':'))
 
 # ---------- World ----------
+if NE == '-': sys.exit(0)
 ne = json.load(open(NE))
 countries = json.load(open(f'{ROOT}/web/src/data/countries.json'))
 want = {c['iso'] for c in countries if len(c['iso']) == 2 and c['iso'] != 'XX'}

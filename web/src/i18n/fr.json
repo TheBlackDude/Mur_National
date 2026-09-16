@@ -277,5 +277,14 @@
   "screen.latest": "Dernier participant",
   "screen.coverage": "{p} / {t} préfectures · {c} pays de la diaspora",
   "screen.scan": "Scannez pour participer",
-  "screen.new": "Nouveau"
+  "screen.new": "Nouveau",
+  "map.conakry": "Conakry",
+  "map.communes": "{n} communes représentées sur 5",
+  "map.ranking": "Classement des préfectures",
+  "map.rankingDiaspora": "Pays de la diaspora les plus actifs",
+  "map.noneYet": "Aucune contribution validée pour l'instant.",
+  "map.leader": "En tête",
+  "map.newPref": "Nouvelle préfecture (décret du 20 août 2026)",
+  "map.legendMax": "le plus actif",
+  "map.regionCount": "{n} régions"
 }
