@@ -8,6 +8,7 @@ import Search from '../admin/Search'
 import Blocklist from '../admin/Blocklist'
 import Dashboard from '../admin/Dashboard'
 import Videos from '../admin/Videos'
+import Protocol from '../admin/Protocol'
 
 const ROLES = ['moderator', 'editor', 'maeiage', 'admin'] as const
 
@@ -52,6 +53,7 @@ export default function Admin() {
         <nav className="flex gap-1">
           <NavLink to="/admin" end className={tab}>{t('admin.nav.l1')}</NavLink>
           {canEdit && <NavLink to="/admin/revue" className={tab}>{t('admin.nav.l2')}</NavLink>}
+          {canEdit && <NavLink to="/admin/protocole" className={tab}>{t('admin.nav.protocol')}</NavLink>}
           <NavLink to="/admin/recherche" className={tab}>{t('admin.nav.search')}</NavLink>
           <NavLink to="/admin/blocages" className={tab}>{t('admin.nav.blocklist')}</NavLink>
           <NavLink to="/admin/tableau" className={tab}>{t('admin.nav.dashboard')}</NavLink>
@@ -63,6 +65,7 @@ export default function Admin() {
       <Routes>
         <Route index element={<Queue level="pending" uid={user.uid} canEdit={canEdit} />} />
         <Route path="revue" element={canEdit ? <Queue level="review" uid={user.uid} canEdit /> : <p className="card p-8 text-center text-muted">{t('admin.editorOnly')}</p>} />
+        <Route path="protocole" element={canEdit ? <Protocol canEdit={canEdit} /> : <p className="card p-8 text-center text-muted">{t('admin.editorOnly')}</p>} />
         <Route path="recherche" element={<Search canEdit={canEdit} />} />
         <Route path="blocages" element={<Blocklist canEdit={canEdit} />} />
         <Route path="tableau" element={<Dashboard canEdit={canEdit} />} />

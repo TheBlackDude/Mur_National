@@ -38,6 +38,7 @@ Launch: countdown page 22 Sept · public launch 25 Sept · national figure revea
 | `/carte` | Everyone | snapshot JSON (per-prefecture + per-country counts) | — |
 | `/ecran` | Giant screen, RTG (OBS browser source) | RTDB counters live + snapshot JSON rotation, full-screen, no chrome | — |
 | `/video?mission=XX&t=TOKEN` | Diaspora invited by a mission | mission doc | Storage resumable upload (≤ 150 MB) |
+| `/presidence?t=TOKEN`, `/gouvernement?t=TOKEN` | Presidency, members of the Government | `protocolInfo` callable | ceremonial landing → `/selfie?vip=CODE&t=TOKEN`; the contribution carries `vip` and takes a reserved number |
 | `/admin` | DCI moderators (L1/L2), MAEIAGE selectors, SGG dashboard | `status == pending` / `review` queues, stats | `moderate`, `selectVideo`, `exportDaily` callables |
 
 Routing on GitHub Pages: copy `index.html` to `404.html` at build time. On Netlify: `_redirects` → `/* /index.html 200`.
@@ -57,10 +58,12 @@ contributions/{id}
   featured (bool), personality (bool), reports (int)
   createdAt, moderatedBy, moderatedAt, rejectReason
   mission (code, videos only), selected (bool, videos only), durationSec
+  vip: "president" | "minister" | null     // protocol link; priority 2, personality, never auto-approved, Protocole tab only
 
 reports/{id}        contributionId, uid, reason, createdAt
 blocklist/{key}     type: "uid" | "phash" | "ip", reason, createdAt
 missions/{code}     name, country, token, qrUrl, contact
+protocolTokens/{code} token, tier              // PRESIDENCE / GOUVERNEMENT; no client access, scripts/seed-protocol.mjs
 config/app          frames[], targets{ national, perPrefecture }, launchAt, revealAt, degraded (bool),
                     liveCounter (bool, default true), safeSearch, kioskAutoApprove, autoApproveClean (bool, default false), retention{days}
 ```
@@ -70,7 +73,10 @@ Indexes: `contributions(status, createdAt desc)`, `(status, prefecture, createdA
 ### Realtime Database
 
 ```
-seq/participant                 -> 48213           (transaction: next number)
+seq/participant                 -> 48213           (transaction: next number; starts at 61, see protocol/)
+protocol/{n}                    -> contributionId  (numbers 1–60 reserved: 1–10 Presidency, 1 = the President's photo,
+                                                    2 = his video; 11–60 Government; freed on reject, moved by moderate→renumber)
+meta/protocolOffset             -> { by: 60, oldSeq, at }   (scripts/reserve-protocol-numbers.mjs ran once)
 counters/national               -> 48102
 counters/prefectures/{code}     -> 1234
 counters/countries/{iso}        -> 87

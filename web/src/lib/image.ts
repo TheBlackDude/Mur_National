@@ -84,7 +84,7 @@ export function souvenirCard(composed: HTMLCanvasElement, participantNumber: num
   const ctx = c.getContext('2d')!
   ctx.fillStyle = '#3273AC'; ctx.fillRect(0, 0, w, c.height)
   ctx.drawImage(composed, 0, 0)
-  drawLogoChip(ctx, logo, w * 0.05, w + band * 0.15, band * 0.7)
+  drawLogoChip(ctx, logo, w * 0.04, w + band * 0.1, band * 0.8)
   ctx.fillStyle = '#FFFFFF'
   ctx.font = `500 ${Math.round(w * 0.035)}px "DM Sans", sans-serif`
   ctx.textAlign = 'center'

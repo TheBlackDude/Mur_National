@@ -79,3 +79,65 @@ export async function exportsConfig(): Promise<{ sheetId: string | null; driveFo
   const s = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : null)
   return { sheetId: s(d.sheetId), driveFolderId: s(d.driveFolderId), alertWebhook: s(d.alertWebhook) }
 }
+
+/**
+ * Protocol numbers. The first 60 participant numbers are reserved for the Presidency and the Government (decision of
+ * 17 Sept 2026): 1–10 for the Presidency link (1 = the President's photo, 2 = the President's video), 11–60 for the
+ * Government link. Everyone else counts from 61. The pool lives in RTDB `protocol/{n} = contribution id`; a number is
+ * freed when its contribution is rejected and can be reassigned by an editor (moderate → renumber).
+ */
+export type Tier = 'president' | 'minister'
+export const PROTOCOL_MAX = 60
+const PRESIDENCY_MAX = 10
+type Pool = Record<string, string>
+
+function candidates(tier: Tier, type: 'photo' | 'video'): number[] {
+  if (tier === 'minister') return Array.from({ length: PROTOCOL_MAX - PRESIDENCY_MAX }, (_, i) => PRESIDENCY_MAX + 1 + i)
+  const rest = Array.from({ length: PRESIDENCY_MAX - 2 }, (_, i) => 3 + i)
+  return [type === 'photo' ? 1 : 2, ...rest]
+}
+
+/** First free number for this tier and media type, or null when the range is full (the caller falls back to seq). */
+export async function reserveProtocolNumber(tier: Tier, type: 'photo' | 'video', id: string): Promise<number | null> {
+  let picked: number | null = null
+  const { snapshot } = await rtdb.ref('protocol').transaction((cur: Pool | null) => {
+    const pool: Pool = { ...(cur ?? {}) }
+    picked = candidates(tier, type).find((n) => !pool[n]) ?? null
+    if (picked === null) return cur
+    pool[picked] = id
+    return pool
+  })
+  const pool = (snapshot.val() as Pool | null) ?? {}
+  return picked !== null && pool[picked] === id ? picked : null
+}
+
+/** Editors move a protocol item to an exact number. Throws already-exists when another contribution holds it. */
+export async function assignProtocolNumber(id: string, n: number): Promise<void> {
+  if (!Number.isInteger(n) || n < 1 || n > PROTOCOL_MAX) throw new HttpsError('invalid-argument', `Number must be 1–${PROTOCOL_MAX}`)
+  let taken = false
+  await rtdb.ref('protocol').transaction((cur: Pool | null) => {
+    const pool: Pool = { ...(cur ?? {}) }
+    taken = !!pool[n] && pool[n] !== id
+    if (taken) return cur
+    for (const k of Object.keys(pool)) if (pool[k] === id) delete pool[k]
+    pool[n] = id
+    return pool
+  })
+  if (taken) throw new HttpsError('already-exists', `Number ${n} is taken`)
+}
+
+export async function releaseProtocolNumber(id: string): Promise<void> {
+  await rtdb.ref('protocol').transaction((cur: Pool | null) => {
+    if (!cur) return cur
+    const pool: Pool = { ...cur }
+    let changed = false
+    for (const k of Object.keys(pool)) if (pool[k] === id) { delete pool[k]; changed = true }
+    return changed ? pool : cur
+  })
+}
+
+/** Who holds protocol number `n` right now (contribution id), or null. */
+export async function protocolOwner(n: number): Promise<string | null> {
+  const s = await rtdb.ref(`protocol/${n}`).get()
+  return (s.val() as string | null) ?? null
+}

@@ -10,7 +10,7 @@ import { placeName, regionOf, REGIONS } from '../lib/places'
 import prefectures from '../data/prefectures.json'
 import countries from '../data/countries.json'
 
-type Item = { id: string; type?: 'photo' | 'video'; thumbUrl?: string; publicUrl?: string; videoUrl?: string | null; prefecture?: string | null; country?: string | null; participantNumber: number; featured?: boolean; personality?: boolean }
+type Item = { id: string; type?: 'photo' | 'video'; thumbUrl?: string; publicUrl?: string; videoUrl?: string | null; prefecture?: string | null; country?: string | null; participantNumber: number; featured?: boolean; personality?: boolean; vip?: 'president' | 'minister' | null }
 type FilterField = 'region' | 'prefecture' | 'country'
 type Filter = { field: FilterField; value: string } | null
 type ReportState = 'idle' | 'sent' | 'already'
@@ -31,7 +31,7 @@ function rememberReported(id: string) {
 
 /** The 2-minute snapshot as Wall rows, honouring the current filter; personalities fall back to the featured flag it carries. */
 function snapshotRows(snap: Snapshot, filter: Filter, seededOnly: boolean): Item[] {
-  let rows: Item[] = snap.recent.map((r) => ({ id: r.id, type: r.type, thumbUrl: r.thumbUrl, videoUrl: r.videoUrl ?? null, participantNumber: r.participantNumber, prefecture: r.prefecture, country: r.country, featured: r.featured }))
+  let rows: Item[] = snap.recent.map((r) => ({ id: r.id, type: r.type, thumbUrl: r.thumbUrl, videoUrl: r.videoUrl ?? null, participantNumber: r.participantNumber, prefecture: r.prefecture, country: r.country, featured: r.featured, vip: r.vip ?? null }))
   if (seededOnly) return rows.filter((r) => r.featured)
   if (filter) {
     rows = rows.filter((r) => filter.field === 'prefecture' ? r.prefecture === filter.value
@@ -124,6 +124,8 @@ export default function Wall() {
         try {
           const snap = await withTimeout(getDocs(query(collection(db, 'contributions'), where('status', '==', 'approved'), where('featured', '==', true), orderBy('createdAt', 'desc'), limit(preLaunch ? 60 : FEATURED_MAX))), FS_TIMEOUT_MS, 'firestore timeout')
           pinned = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Item, 'id'>) }))
+          // Protocol items lead, by number (the President's photo n° 1, his video n° 2); the rest keep newest-first.
+          pinned.sort((a, b) => (a.vip ? a.participantNumber : Infinity) - (b.vip ? b.participantNumber : Infinity))
         } catch (e) { console.warn('[wall] featured', e) }
       }
       if (!alive) return
@@ -266,6 +268,7 @@ export default function Wall() {
             </button>
             {it.videoUrl && <span className="absolute left-2 top-2 text-[10px] font-medium bg-ink/70 text-white rounded-full px-2 py-0.5 pointer-events-none">▶ {t('wall.video')}</span>}
             <span className="absolute left-2 bottom-2 text-[11px] font-medium bg-white/90 text-ink rounded-full px-2 py-0.5 tabular pointer-events-none">#{it.participantNumber}</span>
+            {it.vip && <span className="absolute right-2 bottom-2 text-[10px] font-medium bg-gold text-ink rounded-full px-2 py-0.5 pointer-events-none">{t(it.vip === 'president' ? 'wall.protocolPresident' : 'wall.protocolMinister')}</span>}
             <button
               className="absolute right-1 top-1 min-h-7 text-[10px] text-white/80 hover:text-white bg-black/30 rounded-full px-2 py-0.5"
               onClick={(e) => { e.stopPropagation(); doReport(it.id) }}>

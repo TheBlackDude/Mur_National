@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, type User } from 'firebase/auth'
-import { auth, ensureAnonymousUser, missionInfo, submitContribution, type MissionInfo } from '../lib/firebase'
+import { auth, ensureAnonymousUser, missionInfo, protocolInfo, submitContribution, type MissionInfo, type ProtocolInfo } from '../lib/firebase'
 import { keepAwake, resumableUpload, type UploadHandle } from '../lib/upload'
 import { compose, drawSquare, fileToBitmap, posterFromVideo, scaled, shareOrDownload, souvenirCard, toJpegUnder } from '../lib/image'
 import { FRAME_IDS, SITE_DOMAIN, loadLogo, type FrameId } from '../lib/frames'
@@ -16,13 +16,20 @@ type Step = 1 | 2 | 3 | 4
 type Clip = { blob: Blob; durationSec: number; ext: 'mp4' | 'webm' | 'mov'; name: string; lastModified: number }
 
 const VIDEO_MIN = 40, VIDEO_MAX = 90, VIDEO_MAX_BYTES = 80 * 1024 * 1024
+/** A protocol video may be a short message (server: VIP_VIDEO_MIN_SEC). */
+const VIP_VIDEO_MIN = 10
+/** Kaloum: the Palais and the ministries. Pre-selected on protocol links, still editable. */
+const PROTOCOL_PREFECTURE = 'CKY-KAL'
+const asset = (name: string) => `${import.meta.env.BASE_URL}${name}`
 
 export default function Selfie() {
   const { t, lang } = useI18n()
   const [params] = useSearchParams()
   const kiosk = params.get('kiosk') === '1'
   const missionCode = params.get('mission') ?? ''
-  const missionToken = params.get('t') ?? ''
+  const vipCode = params.get('vip') ?? ''
+  /** Token of a mission or protocol link (`t`). */
+  const linkToken = params.get('t') ?? ''
 
   const [step, setStep] = useState<Step>(1)
   const [photo, setPhoto] = useState<HTMLCanvasElement | null>(null)
@@ -57,20 +64,38 @@ export default function Selfie() {
 
   // Mission link (/selfie?mission=XX&t=…): validate once, then lock the country to the mission's.
   const [mission, setMission] = useState<MissionInfo | null>(null)
-  const [missionState, setMissionState] = useState<'none' | 'checking' | 'ok' | 'invalid'>(missionCode && missionToken ? 'checking' : 'none')
+  const [missionState, setMissionState] = useState<'none' | 'checking' | 'ok' | 'invalid'>(missionCode && linkToken ? 'checking' : 'none')
   useEffect(() => {
     let alive = true
-    if (!missionCode || !missionToken) return
+    if (!missionCode || !linkToken) return
     ;(async () => {
       try {
         await ensureAnonymousUser()
-        const m = await missionInfo({ mission: missionCode, token: missionToken })
+        const m = await missionInfo({ mission: missionCode, token: linkToken })
         if (!alive) return
         setMission(m); setMode('diaspora'); setCountry(m.country); setMissionState('ok')
       } catch { if (alive) setMissionState('invalid') }
     })()
     return () => { alive = false }
-  }, [missionCode, missionToken])
+  }, [missionCode, linkToken])
+
+  // Protocol link (/selfie?vip=PRESIDENCE|GOUVERNEMENT&t=…): validate once; Kaloum pre-selected, short videos allowed.
+  const [protocol, setProtocol] = useState<ProtocolInfo | null>(null)
+  const [protocolState, setProtocolState] = useState<'none' | 'checking' | 'ok' | 'invalid'>(vipCode ? 'checking' : 'none')
+  useEffect(() => {
+    let alive = true
+    if (!vipCode) return
+    ;(async () => {
+      try {
+        await ensureAnonymousUser()
+        const p = await protocolInfo({ code: vipCode, token: linkToken })
+        if (!alive) return
+        setProtocol(p); setMode('guinea'); setPrefecture(PROTOCOL_PREFECTURE); setProtocolState('ok')
+      } catch { if (alive) setProtocolState('invalid') }
+    })()
+    return () => { alive = false }
+  }, [vipCode, linkToken])
+  const videoMin = protocol ? VIP_VIDEO_MIN : VIDEO_MIN
 
   // Steps 2–4 push a history entry so the phone's back button moves one step down instead of leaving the studio.
   function goTo(next: Step) {
@@ -122,7 +147,7 @@ export default function Selfie() {
     let duration: number
     try { duration = await readVideoDuration(file) } catch { setError(t('selfie.videoDuration', { s: 0 })); return }
     const sec = Math.round(duration)
-    if (sec < VIDEO_MIN || sec > VIDEO_MAX) { setError(t('selfie.videoDuration', { s: sec })); return }
+    if (sec < videoMin || sec > VIDEO_MAX) { setError(t(protocol ? 'selfie.videoDurationVip' : 'selfie.videoDuration', { s: sec })); return }
     const url = URL.createObjectURL(file)
     // Chrome only decodes frames for an element that is in the document.
     const v = document.createElement('video')
@@ -195,7 +220,8 @@ export default function Selfie() {
         kiosk,
         consent: { public: true, minorSupervised: kiosk && minor },
         ...(clip ? { type: 'video' as const, videoPath, durationSec: clip.durationSec } : {}),
-        ...(mission ? { mission: mission.code, token: missionToken } : {}),
+        ...(mission ? { mission: mission.code, token: linkToken } : {}),
+        ...(protocol ? { vip: protocol.code, token: linkToken } : {}),
       })
       sentRef.current = null
       setResult(res)
@@ -249,7 +275,8 @@ export default function Selfie() {
     </div>
   )
   if (missionState === 'invalid') return <p className="mx-auto max-w-md card p-8 text-center text-muted">{t('video.invalid')}</p>
-  if (missionState === 'checking') return <p className="p-8 text-center text-muted">{t('video.checking')}</p>
+  if (protocolState === 'invalid') return <p className="mx-auto max-w-md card p-8 text-center text-muted">{t('protocol.invalid')}</p>
+  if (missionState === 'checking' || protocolState === 'checking') return <p className="p-8 text-center text-muted">{t('protocol.checking')}</p>
 
   const lockedCountry = missionState === 'ok'
 
@@ -260,10 +287,16 @@ export default function Selfie() {
       </ol>
       <h1 className="text-2xl font-bold">{steps[step - 1]}{kiosk && <span className="ml-3 text-xs font-medium text-muted align-middle">{t('selfie.kioskTitle')} · {staff?.email}</span>}</h1>
       {mission && <p className="text-sm text-muted mt-1">{t('selfie.missionTitle', { name: mission.name })}</p>}
+      {protocol && (
+        <p className={`mt-2 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium ${protocol.tier === 'president' ? 'bg-ink text-gold' : 'bg-primary-tint text-primary'}`}>
+          <img src={asset('armoiries.svg')} alt="" className="h-5 w-auto" />
+          {t(protocol.tier === 'president' ? 'selfie.protocolPresident' : 'selfie.protocolMinister')}
+        </p>
+      )}
 
       <div className={kiosk && step >= 2 && step <= 3 ? 'md:grid md:grid-cols-2 md:gap-6 md:items-start' : ''}>
       {step === 1 && recording && (
-        <VideoRecorder minSec={VIDEO_MIN} maxSec={VIDEO_MAX} onDone={onRecorded} onCancel={() => setRecording(false)}
+        <VideoRecorder minSec={videoMin} maxSec={VIDEO_MAX} onDone={onRecorded} onCancel={() => setRecording(false)}
           onUnsupported={() => { setRecording(false); setError(t('selfie.rec.noCamera')); videoRef.current?.click() }} />
       )}
       {step === 1 && !recording && (
@@ -273,7 +306,7 @@ export default function Selfie() {
           <button className="btn-primary" onClick={() => { fileRef.current?.setAttribute('capture', 'user'); fileRef.current?.click() }}>{t('selfie.take')}</button>
           <button className="btn-outline" onClick={() => { fileRef.current?.removeAttribute('capture'); fileRef.current?.click() }}>{t('selfie.choose')}</button>
           <div className="border-t border-rule my-1" />
-          <button className="btn-primary" onClick={() => { setError(''); setRecording(true) }}>{t('selfie.record')}</button>
+          <button className="btn-primary" onClick={() => { setError(''); setRecording(true) }}>{t(protocol ? 'selfie.recordVip' : 'selfie.record')}</button>
           <button className="btn-outline" onClick={() => { videoRef.current?.removeAttribute('capture'); videoRef.current?.click() }}>{t('selfie.chooseVideo')}</button>
           {error && <p className="text-danger text-sm" role="alert">{error}</p>}
         </div>
@@ -350,9 +383,9 @@ export default function Selfie() {
       {step === 4 && result && (
         <div className="card p-6 mt-4 text-center grid gap-3">
           {preview && <img src={preview} alt="" className="w-full rounded-[var(--radius-btn)]" />}
-          <p className="text-muted">{t('selfie.done')}</p>
-          <p className={`font-bold text-primary tabular leading-none ${kiosk ? 'text-[96px]' : 'text-5xl'}`}>{result.participantNumber.toLocaleString('fr-FR')}</p>
-          <p className="text-sm text-muted">{clip ? t('selfie.videoOnWall') : t('selfie.pending')}</p>
+          <p className="text-muted">{t(protocol ? 'selfie.protocolDone' : 'selfie.done')}</p>
+          <p className={`font-bold tabular leading-none ${protocol?.tier === 'president' ? 'text-gold-strong' : 'text-primary'} ${kiosk ? 'text-[96px]' : 'text-5xl'}`}>{result.participantNumber.toLocaleString('fr-FR')}</p>
+          <p className="text-sm text-muted">{protocol ? t('selfie.protocolPending') : clip ? t('selfie.videoOnWall') : t('selfie.pending')}</p>
           {nextIn !== null && <p className="text-sm text-muted tabular" role="status">{t('selfie.kioskNext', { s: nextIn })}</p>}
           {!kiosk && <button className="btn-primary" onClick={share}>{t('selfie.share')}</button>}
           <button className="btn-outline" onClick={reset}>{t('selfie.again')}</button>

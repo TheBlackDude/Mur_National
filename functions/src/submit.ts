@@ -1,8 +1,9 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https'
 import { timingSafeEqual } from 'node:crypto'
-import { bucket, checkRate, db, FieldValue, isBlocked, nextParticipantNumber, requireAuth } from './lib.js'
+import { bucket, checkRate, db, FieldValue, isBlocked, nextParticipantNumber, requireAuth, reserveProtocolNumber, type Tier } from './lib.js'
 import { finishIfAlreadyProcessed } from './onPhotoUploaded.js'
 import { PREFECTURE_CODES, REGION_OF } from './prefectures.js'
+import { verifyProtocol } from './protocol.js'
 
 type Req = {
   path: string
@@ -18,11 +19,15 @@ type Req = {
   /** Set when the studio was opened from a diplomatic mission link (/selfie?mission=XX&t=…). */
   mission?: string
   token?: string
+  /** Set when the studio was opened from a protocol link (/selfie?vip=PRESIDENCE|GOUVERNEMENT&t=…). */
+  vip?: string
 }
 
 const VIDEO_EXT = /\.(mp4|webm|mov)$/i
 const VIDEO_MAX_BYTES = 80 * 1024 * 1024
 const VIDEO_MIN_SEC = 40, VIDEO_MAX_SEC = 90
+/** A protocol video may be a short message: 10 s is enough for « Fier d'être Guinéen ». */
+const VIP_VIDEO_MIN_SEC = 10
 
 /** Same check as video.ts: the public mission doc plus the private token, compared in constant time. */
 async function verifyMission(code: unknown, token: unknown): Promise<string> {
@@ -52,6 +57,10 @@ export const submitContribution = onCall<Req>({ minInstances: 2 }, async (req) =
   if (d.prefecture && !PREFECTURE_CODES.has(d.prefecture)) throw new HttpsError('invalid-argument', 'Unknown prefecture')
   const type: 'photo' | 'video' = d.type === 'video' ? 'video' : 'photo'
 
+  // A protocol link (Presidency / Government) is checked before anything else; a bad token is refused outright.
+  const protocol = d.vip ? await verifyProtocol(d.vip, d.token) : null
+  const tier: Tier | null = protocol?.tier ?? null
+
   let videoPath: string | null = null
   let durationSec: number | null = null
   if (type === 'video') {
@@ -59,19 +68,19 @@ export const submitContribution = onCall<Req>({ minInstances: 2 }, async (req) =
     const id = d.path.slice(`uploads/${uid}/`.length, -'.jpg'.length)
     if (!vp.startsWith(`uploads/${uid}/${id}.`) || !VIDEO_EXT.test(vp) || vp.includes('..')) throw new HttpsError('invalid-argument', 'Bad video path')
     durationSec = Math.round(Number(d.durationSec))
-    if (!Number.isFinite(durationSec) || durationSec < VIDEO_MIN_SEC || durationSec > VIDEO_MAX_SEC) throw new HttpsError('failed-precondition', 'Duration out of range')
+    if (!Number.isFinite(durationSec) || durationSec < (tier ? VIP_VIDEO_MIN_SEC : VIDEO_MIN_SEC) || durationSec > VIDEO_MAX_SEC) throw new HttpsError('failed-precondition', 'Duration out of range')
     videoPath = vp
   }
 
   // A mission link tags the contribution for the per-mission counts; a bad token is refused outright.
-  const mission = d.mission || d.token ? await verifyMission(d.mission, d.token) : null
+  const mission = !protocol && (d.mission || d.token) ? await verifyMission(d.mission, d.token) : null
 
   if (await isBlocked(`uid:${uid}`)) throw new HttpsError('permission-denied', 'Blocked')
 
   // Kiosk mode is only honoured for staff-signed devices; citizens get the standard ceiling.
   // A mission phone (token-gated) serves many people in a row, so it gets the kiosk ceiling too.
   const kiosk = !!d.kiosk && (token.moderator === true || token.kiosk === true)
-  await checkRate(uid, kiosk || mission ? 20 : 5, 'selfie')
+  await checkRate(uid, kiosk || mission || tier ? 20 : 5, 'selfie')
 
   const [exists] = await bucket().file(d.path).exists()
   if (!exists) throw new HttpsError('not-found', 'Upload not found')
@@ -90,8 +99,9 @@ export const submitContribution = onCall<Req>({ minInstances: 2 }, async (req) =
     }
   }
 
-  const participantNumber = await nextParticipantNumber()
+  // Protocol items take a reserved number (1–60) when one is free in their range, the sequence otherwise.
   const ref = db.collection('contributions').doc()
+  const participantNumber = (tier ? await reserveProtocolNumber(tier, type, ref.id) : null) ?? (await nextParticipantNumber())
   await ref.set({
     uid,
     participantNumber,
@@ -104,6 +114,7 @@ export const submitContribution = onCall<Req>({ minInstances: 2 }, async (req) =
     isDiaspora: !!d.country,
     mission,
     kiosk,
+    vip: tier, // 'president' | 'minister' | null: routed to the Protocole queue, never auto-approved, sorted first on the Wall
     consent: { public: true, minorSupervised: kiosk && !!d.consent.minorSupervised, at: FieldValue.serverTimestamp() },
     files: { original: d.path, video: videoPath, public: null, thumb: null },
     durationSec,
@@ -112,9 +123,9 @@ export const submitContribution = onCall<Req>({ minInstances: 2 }, async (req) =
     safeSearch: null,
     duplicateOf: null,
     reviewReason: null,
-    priority: 0,
-    featured: false,
-    personality: false,
+    priority: tier ? 2 : 0,
+    featured: tier === 'president',
+    personality: !!tier,
     reports: 0,
     createdAt: FieldValue.serverTimestamp(),
   })

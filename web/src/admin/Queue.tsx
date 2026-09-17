@@ -33,7 +33,9 @@ export default function Queue({ level, uid, canEdit }: { level: 'pending' | 'rev
     setError(null)
     const q = query(collection(db, 'contributions'), where('status', '==', level), orderBy('priority', 'desc'), orderBy('createdAt', 'asc'), limit(40))
     return onSnapshot(q, (s) => {
-      setItems(s.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Contribution, 'id'>) })))
+      // Presidency / Government items are handled in the Protocole tab by editors; they never reach L1/L2.
+      setItems(s.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Contribution, 'id'>) })).filter((c) => !c.vip))
+      if (s.size < 40) { setCount(null); return } // the whole queue is on screen: count what is shown
       getCountFromServer(query(collection(db, 'contributions'), where('status', '==', level))).then((r) => setCount(r.data().count)).catch(() => {})
     }, (e) => setError(e.message))
   }, [level])

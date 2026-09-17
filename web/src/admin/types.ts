@@ -25,6 +25,8 @@ export type Contribution = {
   reports?: number
   featured?: boolean
   personality?: boolean
+  /** Presidency or Government link; these items live in the Protocole tab, not in L1/L2. */
+  vip?: 'president' | 'minister' | null
   priority?: number
   createdAt?: Timestamp
   moderatedByEmail?: string | null

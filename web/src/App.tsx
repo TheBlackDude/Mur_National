@@ -25,6 +25,7 @@ const Wall = lazyRoute(() => import('./pages/Wall'))
 const MapPage = lazyRoute(() => import('./pages/Map'))
 const Screen = lazyRoute(() => import('./pages/Screen'))
 const Video = lazyRoute(() => import('./pages/Video'))
+const Protocol = lazyRoute(() => import('./pages/Protocol'))
 const Admin = lazyRoute(() => import('./pages/Admin'))
 const FramesPreview = import.meta.env.DEV ? lazy(() => import('./pages/FramesPreview')) : null
 const UploadTest = import.meta.env.DEV ? lazy(() => import('./pages/UploadTest')) : null
@@ -53,6 +54,9 @@ export default function App() {
           <Route path="/mur" element={<Wall />} />
           <Route path="/carte" element={<MapPage />} />
           <Route path="/video" element={<Video />} />
+          {/* Protocol links: the Presidency (numbers 1–10) and the Government (11–60). */}
+          <Route path="/presidence" element={<Protocol />} />
+          <Route path="/gouvernement" element={<Protocol />} />
           <Route path="/admin/*" element={<Admin />} />
           {FramesPreview && <Route path="/dev/cadres" element={<FramesPreview />} />}
           {UploadTest && <Route path="/dev/upload" element={<UploadTest />} />}

@@ -94,7 +94,13 @@ function drawA(ctx: CanvasRenderingContext2D, photo: HTMLCanvasElement, w: numbe
   ctx.font = font(500, 2.7 * u)
   ctx.fillText(lang === 'fr' ? '68 ans d’indépendance · 2 octobre 2026' : '68 years of independence · 2 October 2026', 5 * u, y0 + 12.6 * u)
 
-  drawLogoChip(ctx, logo, w - 5 * u - 13 * u, y0 + 2 * u, 13 * u)
+  // The chip rises above the band edge into the photo: larger without a taller band, and the logo reads as a seal.
+  ctx.save()
+  ctx.shadowColor = 'rgba(0,0,0,.35)'
+  ctx.shadowBlur = 1.2 * u
+  ctx.shadowOffsetY = 0.4 * u
+  drawLogoChip(ctx, logo, w - 5 * u - 17 * u, y0 - 3.5 * u, 17 * u)
+  ctx.restore()
 
   return { x: w - 5 * u, y: 5.6 * u, size: 2.2 * u, align: 'right', color: 'rgba(255,255,255,.85)' }
 }
@@ -133,7 +139,8 @@ function drawB(ctx: CanvasRenderingContext2D, photo: HTMLCanvasElement, w: numbe
   ctx.save()
   ctx.shadowColor = 'rgba(0,0,0,.35)'
   ctx.shadowBlur = 1.2 * u
-  drawLogoChip(ctx, logo, w - 8 * u - 16 * u, w - 8 * u - 16 * u, 16 * u)
+  ctx.shadowOffsetY = 0.4 * u
+  drawLogoChip(ctx, logo, w - 8 * u - 20 * u, w - 8 * u - 20 * u, 20 * u)
   ctx.restore()
 
   return { x: 8 * u, y: w - 7.6 * u, size: 2.2 * u, align: 'left', color: 'rgba(255,255,255,.7)' }
@@ -171,8 +178,8 @@ function drawC(ctx: CanvasRenderingContext2D, photo: HTMLCanvasElement, w: numbe
   ctx.fillText(lang === 'fr' ? 'Mur National · An 68 · ' : 'National Wall · Year 68 · ', 6 * u, w - 5.6 * u)
   const tail = ctx.measureText(lang === 'fr' ? 'Mur National · An 68 · ' : 'National Wall · Year 68 · ').width
 
-  if (logo) ctx.drawImage(logo, w - 6 * u - 15 * u, w - 17.5 * u, 15 * u, 15 * u)
-  else drawLogoChip(ctx, null, w - 6 * u - 14 * u, w - 17 * u, 14 * u)
+  if (logo) ctx.drawImage(logo, w - 5 * u - 18.5 * u, w - 19.5 * u, 18.5 * u, 18.5 * u)
+  else drawLogoChip(ctx, null, w - 5 * u - 17 * u, w - 18.5 * u, 17 * u)
 
   return { x: 6 * u + tail, y: w - 5.6 * u, size: 2.7 * u, align: 'left', color: MP.muted }
 }

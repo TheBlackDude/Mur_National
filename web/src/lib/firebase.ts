@@ -124,13 +124,15 @@ export type SubmitReq = {
   consent: { public: true; minorSupervised?: boolean }
   type?: 'photo' | 'video'; videoPath?: string; durationSec?: number
   mission?: string; token?: string
+  /** Protocol link (PRESIDENCE | GOUVERNEMENT) with the same `token` field. */
+  vip?: string
 }
 export type SubmitRes = { id: string; participantNumber: number }
 export const submitContribution = call<SubmitReq, SubmitRes>('submitContribution')
 
 export type RejectReason = 'inappropriate' | 'not_person' | 'duplicate' | 'minor' | 'other'
-export type ModerateAction = 'approve' | 'reject' | 'review' | 'feature' | 'unfeature' | 'personality' | 'unpersonality' | 'block' | 'unblock'
-export type ModerateReq = { id: string; action: ModerateAction; reason?: RejectReason; block?: boolean }
+export type ModerateAction = 'approve' | 'reject' | 'review' | 'feature' | 'unfeature' | 'personality' | 'unpersonality' | 'block' | 'unblock' | 'renumber'
+export type ModerateReq = { id: string; action: ModerateAction; reason?: RejectReason; block?: boolean; number?: number }
 export const moderate = call<ModerateReq, { ok: true }>('moderate')
 
 export const report = call<{ id: string; reason: string }, { ok: true }>('report')
@@ -138,6 +140,11 @@ export const report = call<{ id: string; reason: string }, { ok: true }>('report
 // D6 callables (functions/src/video.ts, exports.ts)
 export type MissionInfo = { code: string; name: string; country: string; contact?: string | null }
 export const missionInfo = call<{ mission: string; token: string }, MissionInfo>('missionInfo')
+
+// Protocol links (functions/src/protocol.ts): the Presidency and the Government.
+export type ProtocolTier = 'president' | 'minister'
+export type ProtocolInfo = { code: string; tier: ProtocolTier }
+export const protocolInfo = call<{ code: string; token: string }, ProtocolInfo>('protocolInfo')
 export type SubmitVideoReq = { path: string; mission: string; token: string; durationSec: number; firstName?: string; city?: string; consent: { film: true } }
 export const submitVideo = call<SubmitVideoReq, { id: string; participantNumber: number }>('submitVideo')
 export type SelectVideoReq = { id: string; selected?: boolean; tags?: string[]; notes?: string }

@@ -19,7 +19,7 @@ export const snapshot = onSchedule({ schedule: 'every 2 minutes', timeoutSeconds
     countries: c.countries ?? {},
     recent: recent.docs.map((d) => {
       const x = d.data()
-      return { id: d.id, type: x.type ?? 'photo', thumbUrl: x.thumbUrl, videoUrl: x.videoUrl ?? null, participantNumber: x.participantNumber, prefecture: x.prefecture, country: x.country, featured: !!x.featured }
+      return { id: d.id, type: x.type ?? 'photo', thumbUrl: x.thumbUrl, videoUrl: x.videoUrl ?? null, participantNumber: x.participantNumber, prefecture: x.prefecture, country: x.country, featured: !!x.featured, vip: x.vip ?? null }
     }),
   }
   await bucket().file('snapshot/latest.json').save(JSON.stringify(body), {

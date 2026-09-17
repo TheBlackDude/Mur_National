@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useI18n } from '../lib/i18n'
 
-export type LightboxItem = { id: string; type?: 'photo' | 'video'; thumbUrl?: string; publicUrl?: string; videoUrl?: string | null; participantNumber: number; place?: string }
+export type LightboxItem = { id: string; type?: 'photo' | 'video'; thumbUrl?: string; publicUrl?: string; videoUrl?: string | null; participantNumber: number; place?: string; vip?: 'president' | 'minister' | null }
 
 type Props = {
   item: LightboxItem
@@ -77,6 +77,7 @@ export default function Lightbox({ item, hasPrev, hasNext, onPrev, onNext, onClo
         <div className="flex items-center justify-between text-white">
           <div>
             <p className="font-bold text-lg tabular">{t('wall.participant')}{item.participantNumber.toLocaleString('fr-FR')}</p>
+            {item.vip && <p className="text-sm font-medium text-gold">{t(item.vip === 'president' ? 'wall.protocolPresident' : 'wall.protocolMinister')}</p>}
             {item.place && <p className="text-sm text-white/70">{item.place}</p>}
           </div>
           <button data-autofocus className="btn-white h-10 px-4" onClick={onClose}>{t('wall.close')}</button>

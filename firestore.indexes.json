@@ -23,7 +23,9 @@
     { "collectionGroup": "contributions", "queryScope": "COLLECTION", "fields": [
       { "fieldPath": "status", "order": "ASCENDING" }, { "fieldPath": "featured", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" } ] },
     { "collectionGroup": "contributions", "queryScope": "COLLECTION", "fields": [
-      { "fieldPath": "type", "order": "ASCENDING" }, { "fieldPath": "mission", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" } ] }
+      { "fieldPath": "type", "order": "ASCENDING" }, { "fieldPath": "mission", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" } ] },
+    { "collectionGroup": "contributions", "queryScope": "COLLECTION", "fields": [
+      { "fieldPath": "vip", "order": "ASCENDING" }, { "fieldPath": "createdAt", "order": "DESCENDING" } ] }
   ],
   "fieldOverrides": []
 }

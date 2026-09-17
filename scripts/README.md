@@ -7,6 +7,23 @@ Run everything from the repository root with Node 20 or newer.
 - `gcloud auth application-default login` once on the machine (Application Default Credentials). The scripts call the Firestore REST API with that token; no service-account key is created, which the org policy forbids anyway.
 - For the posters: `cd scripts && npm install` (installs `qrcode` and `pdfkit` into `scripts/node_modules`, gitignored).
 
+## `seed-protocol.mjs` — the Presidency and Government links
+
+```bash
+node scripts/seed-protocol.mjs            # creates protocolTokens/PRESIDENCE and /GOUVERNEMENT, prints the two links
+node scripts/seed-protocol.mjs --rotate   # new tokens (links already handed out stop working)
+```
+
+Links: `https://guineen68.com/presidence?t=…` (numbers 1–10; the President's photo is n° 1, his video n° 2) and
+`https://guineen68.com/gouvernement?t=…` (numbers 11–60). Output in `scripts/out/protocol.csv` (gitignored).
+
+## `reserve-protocol-numbers.mjs` — free numbers 1–60 (run once)
+
+```bash
+node scripts/reserve-protocol-numbers.mjs        # dry run
+node scripts/reserve-protocol-numbers.mjs --yes  # every existing contribution moves up by 60, the sequence too
+```
+
 ## `seed-missions.mjs` — missions and invite links
 
 ```bash

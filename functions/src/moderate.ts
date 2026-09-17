@@ -1,14 +1,14 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https'
 import type { DocumentReference, DocumentData } from 'firebase-admin/firestore'
-import { bucket, db, FieldValue, IMMUTABLE_CACHE, publicUrl, requireRole, rtdb } from './lib.js'
+import { assignProtocolNumber, bucket, db, FieldValue, IMMUTABLE_CACHE, PROTOCOL_MAX, protocolOwner, nextParticipantNumber, publicUrl, releaseProtocolNumber, requireRole, reserveProtocolNumber, rtdb, type Tier } from './lib.js'
 
-export type ModerateAction = 'approve' | 'reject' | 'review' | 'feature' | 'unfeature' | 'personality' | 'unpersonality' | 'block' | 'unblock'
+export type ModerateAction = 'approve' | 'reject' | 'review' | 'feature' | 'unfeature' | 'personality' | 'unpersonality' | 'block' | 'unblock' | 'renumber'
 export type RejectReason = 'inappropriate' | 'not_person' | 'duplicate' | 'minor' | 'other'
-type Req = { id: string; action: ModerateAction; reason?: RejectReason; block?: boolean }
+type Req = { id: string; action: ModerateAction; reason?: RejectReason; block?: boolean; /** renumber: the protocol number to give (1–60) */ number?: number }
 
-const ACTIONS: ModerateAction[] = ['approve', 'reject', 'review', 'feature', 'unfeature', 'personality', 'unpersonality', 'block', 'unblock']
+const ACTIONS: ModerateAction[] = ['approve', 'reject', 'review', 'feature', 'unfeature', 'personality', 'unpersonality', 'block', 'unblock', 'renumber']
 const REASONS: RejectReason[] = ['inappropriate', 'not_person', 'duplicate', 'minor', 'other']
-const EDITOR_ACTIONS: ModerateAction[] = ['feature', 'unfeature', 'personality', 'unpersonality', 'block', 'unblock']
+const EDITOR_ACTIONS: ModerateAction[] = ['feature', 'unfeature', 'personality', 'unpersonality', 'block', 'unblock', 'renumber']
 
 /** Who did it. `system` is used by the kiosk auto-approve path in onPhotoUploaded. */
 export type Audit = { by: string; byEmail: string | null }
@@ -22,6 +22,12 @@ export async function approveContribution(ref: DocumentReference, c: DocumentDat
   if (c.status === 'approved') return
   if (!c.files?.thumb || !c.files?.public) throw new HttpsError('failed-precondition', 'Still processing, retry in a few seconds')
   const id = ref.id
+  // A protocol item whose reserved number was freed (rejected, then approved again) and taken since gets a fresh one.
+  let renumbered: number | null = null
+  if (c.vip && c.participantNumber <= PROTOCOL_MAX && (await protocolOwner(c.participantNumber)) !== id) {
+    renumbered = await reserveProtocolNumber(c.vip as Tier, c.type === 'video' ? 'video' : 'photo', id)
+    if (renumbered === null) renumbered = await nextParticipantNumber()
+  }
   const thumbPath = `thumbs/${id}.jpg`, publicPath = `public/${id}.jpg`
   // Video selfies: the clip goes public next to its poster, keeping its extension.
   const videoPath = typeof c.files?.video === 'string' && c.files.video ? `public/${id}.${videoExt(c.files.video)}` : null
@@ -36,6 +42,7 @@ export async function approveContribution(ref: DocumentReference, c: DocumentDat
     'files.thumb': thumbPath, 'files.public': publicPath,
     thumbUrl: publicUrl(thumbPath), publicUrl: publicUrl(publicPath),
     ...(videoPath ? { 'files.video': videoPath, videoUrl: publicUrl(videoPath) } : {}),
+    ...(renumbered !== null ? { participantNumber: renumbered } : {}),
     ...stamp(audit),
   })
   await bump(c, +1)
@@ -82,6 +89,8 @@ export const moderate = onCall<Req>(async (req) => {
         ])
       }
       if (block) await blockDevice(c.uid, reason ?? 'moderation', audit)
+      // A rejected protocol item gives its reserved number back so the right person can take it.
+      if (c.vip && c.participantNumber <= PROTOCOL_MAX) await releaseProtocolNumber(id)
       await history(ref, 'reject', audit, reason, block)
       return { ok: true }
     }
@@ -115,6 +124,16 @@ export const moderate = onCall<Req>(async (req) => {
       await ref.update(stamp(audit))
       await history(ref, 'unblock', audit)
       return { ok: true }
+
+    case 'renumber': {
+      // Editors place a Presidency / Government item on an exact reserved number (1–60); the old number is freed.
+      if (!c.vip) throw new HttpsError('failed-precondition', 'Only protocol items can be renumbered')
+      const n = Number(req.data.number)
+      await assignProtocolNumber(id, n)
+      await ref.update({ participantNumber: n, ...stamp(audit) })
+      await history(ref, 'renumber', audit, String(n))
+      return { ok: true, participantNumber: n }
+    }
   }
 })
 

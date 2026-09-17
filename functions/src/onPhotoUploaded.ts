@@ -81,7 +81,8 @@ export async function annotate(ref: DocumentReference, id: string, { phash, safe
   const clean = safeSearch !== null && !FLAGGED.includes(safeSearch.adult) && !FLAGGED.includes(safeSearch.violence) && !FLAGGED.includes(safeSearch.racy)
   const reviewReason: ReviewReason = duplicateOf ? 'duplicate' : flagged ? 'safesearch' : null
   const kiosk = c.kiosk === true
-  const priority = kiosk && clean ? 1 : 0
+  // Protocol items (Presidency / Government) stay on top of every queue and never take the automatic paths.
+  const priority = c.vip ? 2 : kiosk && clean ? 1 : 0
 
   await ref.update({
     phash, duplicateOf, safeSearch, reviewReason, priority,
@@ -94,7 +95,7 @@ export async function annotate(ref: DocumentReference, id: string, { phash, safe
   // Auto-approval paths (both off by default): clean kiosk items, or every clean item when config/app.autoApproveClean
   // is on — the volume lever for the week if the moderation backlog outgrows the team. Duplicates always wait for L2.
   const auto = (config.kioskAutoApprove && kiosk) || config.autoApproveClean
-  if (auto && clean && !duplicateOf && c.status === 'pending') {
+  if (auto && clean && !duplicateOf && c.status === 'pending' && !c.vip) {
     const fresh = (await ref.get()).data()!
     await approveContribution(ref, fresh, { by: 'system', byEmail: null })
   }
