@@ -129,9 +129,9 @@ function Board() {
         </div>
         <div className="flex items-center justify-end gap-[1.6vw] portrait:order-3 portrait:justify-center">
           <Clock />
-          {/* An 68 seal: white card with a gold rim, a fifth larger than the first cut (17 Sept 2026). */}
+          {/* An 68 seal: white card with a gold rim, enlarged twice on the DCI's request (17 Sept 2026). */}
           <div className="bg-white rounded-[min(1.6vw,2.8vh)] p-[min(0.7vw,1.2vh)] shadow-[0_1vh_3vh_rgba(0,0,0,.32)] ring-[0.25vh] ring-gold/80">
-            <img src={asset('logo-68-lg.png')} alt="An 68" className="h-[min(16vh,13.5vw)] w-auto block" />
+            <img src={asset('logo-68-lg.png')} alt="An 68" className="h-[min(19vh,16vw)] w-auto block" />
           </div>
         </div>
       </header>

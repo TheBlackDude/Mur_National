@@ -99,7 +99,7 @@ function drawA(ctx: CanvasRenderingContext2D, photo: HTMLCanvasElement, w: numbe
   ctx.shadowColor = 'rgba(0,0,0,.35)'
   ctx.shadowBlur = 1.2 * u
   ctx.shadowOffsetY = 0.4 * u
-  drawLogoChip(ctx, logo, w - 5 * u - 17 * u, y0 - 3.5 * u, 17 * u)
+  drawLogoChip(ctx, logo, w - 5 * u - 20 * u, y0 - 5 * u, 20 * u)
   ctx.restore()
 
   return { x: w - 5 * u, y: 5.6 * u, size: 2.2 * u, align: 'right', color: 'rgba(255,255,255,.85)' }
@@ -140,7 +140,7 @@ function drawB(ctx: CanvasRenderingContext2D, photo: HTMLCanvasElement, w: numbe
   ctx.shadowColor = 'rgba(0,0,0,.35)'
   ctx.shadowBlur = 1.2 * u
   ctx.shadowOffsetY = 0.4 * u
-  drawLogoChip(ctx, logo, w - 8 * u - 20 * u, w - 8 * u - 20 * u, 20 * u)
+  drawLogoChip(ctx, logo, w - 7 * u - 23 * u, w - 7 * u - 23 * u, 23 * u)
   ctx.restore()
 
   return { x: 8 * u, y: w - 7.6 * u, size: 2.2 * u, align: 'left', color: 'rgba(255,255,255,.7)' }
@@ -152,7 +152,7 @@ function drawC(ctx: CanvasRenderingContext2D, photo: HTMLCanvasElement, w: numbe
   ctx.fillStyle = MP.white
   ctx.fillRect(0, 0, w, w)
 
-  const m = 4 * u, pw = w - 2 * m, ph = w - m - 20 * u
+  const m = 4 * u, pw = w - 2 * m, ph = w - m - 22 * u
   const srcH = photo.width * (ph / pw), sy = (photo.height - srcH) / 2
   ctx.save()
   roundedPath(ctx, m, m, pw, ph, 2.5 * u)
@@ -172,16 +172,16 @@ function drawC(ctx: CanvasRenderingContext2D, photo: HTMLCanvasElement, w: numbe
   ctx.textAlign = 'left'
   ctx.fillStyle = MP.ink
   ctx.font = font(700, 5 * u)
-  ctx.fillText('#FierDetreGuineen', 6 * u, w - 10.2 * u)
+  ctx.fillText('#FierDetreGuineen', 6 * u, w - 11.2 * u)
   ctx.fillStyle = MP.muted
   ctx.font = font(500, 2.7 * u)
-  ctx.fillText(lang === 'fr' ? 'Mur National · An 68 · ' : 'National Wall · Year 68 · ', 6 * u, w - 5.6 * u)
+  ctx.fillText(lang === 'fr' ? 'Mur National · An 68 · ' : 'National Wall · Year 68 · ', 6 * u, w - 6.2 * u)
   const tail = ctx.measureText(lang === 'fr' ? 'Mur National · An 68 · ' : 'National Wall · Year 68 · ').width
 
-  if (logo) ctx.drawImage(logo, w - 5 * u - 18.5 * u, w - 19.5 * u, 18.5 * u, 18.5 * u)
-  else drawLogoChip(ctx, null, w - 5 * u - 17 * u, w - 18.5 * u, 17 * u)
+  if (logo) ctx.drawImage(logo, w - 4.5 * u - 21 * u, w - 21.5 * u, 21 * u, 21 * u)
+  else drawLogoChip(ctx, null, w - 5 * u - 19 * u, w - 20.5 * u, 19 * u)
 
-  return { x: 6 * u + tail, y: w - 5.6 * u, size: 2.7 * u, align: 'left', color: MP.muted }
+  return { x: 6 * u + tail, y: w - 6.2 * u, size: 2.7 * u, align: 'left', color: MP.muted }
 }
 
 const DRAW: Record<FrameId, (ctx: CanvasRenderingContext2D, photo: HTMLCanvasElement, w: number, lang: Lang, logo: HTMLImageElement | null) => Watermark> = { A: drawA, B: drawB, C: drawC }
