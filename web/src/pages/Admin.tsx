@@ -9,8 +9,10 @@ import Blocklist from '../admin/Blocklist'
 import Dashboard from '../admin/Dashboard'
 import Videos from '../admin/Videos'
 import Protocol from '../admin/Protocol'
+import Invitations from '../admin/Invitations'
+import EventPage from '../admin/EventPage'
 
-const ROLES = ['moderator', 'editor', 'maeiage', 'admin'] as const
+const ROLES = ['moderator', 'editor', 'maeiage', 'admin', 'protocol', 'gate'] as const
 
 /** Staff console: Google sign-in gate, roles from custom claims, then L1 / L2 / search / blocklist. */
 export default function Admin() {
@@ -33,6 +35,8 @@ export default function Admin() {
       <button className="btn-primary mt-6 w-full" onClick={() => signInWithPopup(auth, new GoogleAuthProvider())}>Google</button>
     </div>
   )
+  // Gate agents have nothing to do in the console: their app is /controle.
+  if (roles.length > 0 && roles.every((r) => r === 'gate')) return <Navigate to="/controle" replace />
   if (roles.length === 0) return (
     <div className="mx-auto max-w-sm card p-8 text-center grid gap-4">
       <p className="text-muted">{t('admin.forbidden')}</p>
@@ -44,6 +48,7 @@ export default function Admin() {
 
   const canEdit = roles.includes('editor') || roles.includes('admin')
   const canSelect = canEdit || roles.includes('maeiage')
+  const canInvite = roles.includes('protocol') || roles.includes('admin')
   const tab = ({ isActive }: { isActive: boolean }) => `px-3 h-9 inline-flex items-center rounded-lg text-sm font-medium ${isActive ? 'bg-primary-tint text-primary' : 'text-muted hover:text-ink'}`
 
   return (
@@ -58,6 +63,7 @@ export default function Admin() {
           <NavLink to="/admin/blocages" className={tab}>{t('admin.nav.blocklist')}</NavLink>
           <NavLink to="/admin/tableau" className={tab}>{t('admin.nav.dashboard')}</NavLink>
           {canSelect && <NavLink to="/admin/videos" className={tab}>{t('admin.nav.videos')}</NavLink>}
+          {canInvite && <NavLink to="/admin/invitations" className={tab}>{t('admin.nav.invitations')}</NavLink>}
         </nav>
         <span className="text-xs text-muted">{user.email} · {roles.join(', ')}</span>
         <button className="btn-outline h-9 px-3 text-xs" onClick={() => signOut(auth)}>{t('admin.signout')}</button>
@@ -70,6 +76,8 @@ export default function Admin() {
         <Route path="blocages" element={<Blocklist canEdit={canEdit} />} />
         <Route path="tableau" element={<Dashboard canEdit={canEdit} />} />
         <Route path="videos" element={canSelect ? <Videos canSelect={canSelect} /> : <p className="card p-8 text-center text-muted">{t('admin.editorOnly')}</p>} />
+        <Route path="invitations" element={canInvite ? <Invitations /> : <p className="card p-8 text-center text-muted">{t('admin.editorOnly')}</p>} />
+        <Route path="invitations/:eventId" element={canInvite ? <EventPage /> : <p className="card p-8 text-center text-muted">{t('admin.editorOnly')}</p>} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
     </div>

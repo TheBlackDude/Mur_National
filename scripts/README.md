@@ -7,6 +7,13 @@ Run everything from the repository root with Node 20 or newer.
 - `gcloud auth application-default login` once on the machine (Application Default Credentials). The scripts call the Firestore REST API with that token; no service-account key is created, which the org policy forbids anyway.
 - For the posters: `cd scripts && npm install` (installs `qrcode` and `pdfkit` into `scripts/node_modules`, gitignored).
 
+## Roles for the invitations
+
+```bash
+cd functions && GOOGLE_CLOUD_PROJECT=guinea68 node ../scripts/set-role.mjs cabinet@example.com protocol   # Cabinet SGG: /admin/invitations
+cd functions && GOOGLE_CLOUD_PROJECT=guinea68 node ../scripts/set-role.mjs agent@example.com gate         # gate agents: /controle only
+```
+
 ## `seed-protocol.mjs` — the Presidency and Government links
 
 ```bash

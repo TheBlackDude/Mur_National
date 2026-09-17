@@ -4,6 +4,9 @@ service cloud.firestore {
     function signedIn() { return request.auth != null; }
     function hasRole(role) { return signedIn() && request.auth.token.get(role, false) == true; }
     function isStaff() { return hasRole('moderator') || hasRole('editor') || hasRole('maeiage') || hasRole('admin'); }
+    // Invitations protocolaires: the Cabinet SGG (protocol) manages events and guests; gate agents only scan.
+    function isProtocol() { return hasRole('protocol') || hasRole('admin'); }
+    function isGate() { return hasRole('gate') || isProtocol(); }
 
     // Public wall: approved items only. Nothing is written by clients; Cloud Functions own all writes.
     match /contributions/{id} {
@@ -32,6 +35,36 @@ service cloud.firestore {
       allow read: if true;
       allow write: if hasRole('admin') || hasRole('maeiage');
     }
+    // Events and guests are staff-only data; photos travel inside the guest document (small data URL) so the gate
+    // phones hold everything offline through Firestore persistence. Codes, tokens and keys are written by callables.
+    match /events/{eventId} {
+      allow read: if isGate();
+      allow create: if false; // createEvent callable generates the signing key
+      allow update: if isProtocol()
+                    && request.resource.data.publicKey == resource.data.publicKey
+                    && request.resource.data.code == resource.data.code;
+      allow delete: if false;
+      match /guests/{guestId} {
+        allow read: if isGate();
+        allow create: if isProtocol() && !('token' in request.resource.data) && !('code' in request.resource.data);
+        allow update: if isProtocol()
+                      && request.resource.data.get('token', null) == resource.data.get('token', null)
+                      && request.resource.data.get('code', null) == resource.data.get('code', null);
+        allow delete: if isProtocol() && resource.data.get('token', null) == null;
+      }
+      // One document per admitted guest, created by the first phone that admits them, never changed by a gate.
+      match /checkins/{guestId} {
+        allow read: if isGate();
+        allow create: if isGate() && request.resource.data.by == request.auth.uid;
+        allow update, delete: if isProtocol();
+      }
+      match /scans/{scanId} {
+        allow read: if isGate();
+        allow create: if isGate() && request.resource.data.by == request.auth.uid;
+        allow update, delete: if false;
+      }
+    }
+    match /eventKeys/{eventId} { allow read, write: if false; }
     match /config/{doc} {
       allow read: if true;
       allow write: if hasRole('admin') || hasRole('editor');

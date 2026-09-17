@@ -30,6 +30,9 @@ export const who = (t) => ({
   editor: t.authenticatedContext('ed-1', { editor: true, email: 'ed@example.com' }),
   maeiage: t.authenticatedContext('mae-1', { maeiage: true, email: 'mae@example.com' }),
   admin: t.authenticatedContext('adm-1', { admin: true, email: 'adm@example.com' }),
+  protocol: t.authenticatedContext('prot-1', { protocol: true, email: 'prot@example.com' }),
+  gate: t.authenticatedContext('gate-1', { gate: true, email: 'gate@example.com' }),
+  gate2: t.authenticatedContext('gate-2', { gate: true, email: 'gate2@example.com' }),
 })
 
 export const ok = assertSucceeds

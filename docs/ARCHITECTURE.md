@@ -38,6 +38,8 @@ Launch: countdown page 22 Sept · public launch 25 Sept · national figure revea
 | `/carte` | Everyone | snapshot JSON (per-prefecture + per-country counts) | — |
 | `/ecran` | Giant screen, RTG (OBS browser source) | RTDB counters live + snapshot JSON rotation, full-screen, no chrome | — |
 | `/video?mission=XX&t=TOKEN` | Diaspora invited by a mission | mission doc | Storage resumable upload (≤ 150 MB) |
+| `/controle` | Gate agents (role `gate`) | events, guests (with photos) and check-ins of one event, kept offline by Firestore persistence | check-in (create-only), scan log |
+| `/admin/invitations` | Cabinet SGG (role `protocol`) | events, guests, check-ins, scans | guests (direct writes under rules), `createEvent`, `issueInvitations` |
 | `/presidence?t=TOKEN`, `/gouvernement?t=TOKEN` | Presidency, members of the Government | `protocolInfo` callable | ceremonial landing → `/selfie?vip=CODE&t=TOKEN`; the contribution carries `vip` and takes a reserved number |
 | `/admin` | DCI moderators (L1/L2), MAEIAGE selectors, SGG dashboard | `status == pending` / `review` queues, stats | `moderate`, `selectVideo`, `exportDaily` callables |
 
@@ -64,6 +66,15 @@ reports/{id}        contributionId, uid, reason, createdAt
 blocklist/{key}     type: "uid" | "phash" | "ip", reason, createdAt
 missions/{code}     name, country, token, qrUrl, contact
 protocolTokens/{code} token, tier              // PRESIDENCE / GOUVERNEMENT; no client access, scripts/seed-protocol.mjs
+
+// Invitations protocolaires (parade of 2 Oct, President's dinner) — functions/src/invitations.ts
+events/{eventId}                name, code (3 letters, in every QR), kind: parade | dinner, venue, date, time, dressCode,
+                                intro, lead, titleLines[], zoneLabel, verso, gates, publicKey (ECDSA P-256 SPKI), guestCount, issuedCount
+events/{eventId}/guests/{gid}   civility, firstName, lastName, title, category, zone, seat, phone, photo (JPEG data URL ≈ 20 KB,
+                                never printed), code (8 chars, unique per event), token (QR payload), status: active | revoked
+events/{eventId}/checkins/{gid} gate, by, byEmail, at, offline   // create-only for gates: first phone wins, the second sync is rejected
+events/{eventId}/scans/{auto}   result: admitted | refused, reason, guestId, gate, by, at
+eventKeys/{eventId}             privateKey (PKCS8 PEM)          // no client access; signs `<code>.<guestId>.<shortCode>`
 config/app          frames[], targets{ national, perPrefecture }, launchAt, revealAt, degraded (bool),
                     liveCounter (bool, default true), safeSearch, kioskAutoApprove, autoApproveClean (bool, default false), retention{days}
 ```

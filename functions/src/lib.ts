@@ -12,7 +12,7 @@ export { FieldValue }
  *  and Google's edge keep them for a year, so a Wall view costs one request per thumbnail per device, not per visit. */
 export const IMMUTABLE_CACHE = 'public, max-age=31536000, immutable'
 
-export type Role = 'moderator' | 'editor' | 'maeiage' | 'admin'
+export type Role = 'moderator' | 'editor' | 'maeiage' | 'admin' | 'protocol' | 'gate'
 
 export function requireAuth(req: CallableRequest) {
   if (!req.auth) throw new HttpsError('unauthenticated', 'Sign in first')

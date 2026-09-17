@@ -26,6 +26,7 @@ const MapPage = lazyRoute(() => import('./pages/Map'))
 const Screen = lazyRoute(() => import('./pages/Screen'))
 const Video = lazyRoute(() => import('./pages/Video'))
 const Protocol = lazyRoute(() => import('./pages/Protocol'))
+const Gate = lazyRoute(() => import('./pages/Gate'))
 const Admin = lazyRoute(() => import('./pages/Admin'))
 const FramesPreview = import.meta.env.DEV ? lazy(() => import('./pages/FramesPreview')) : null
 const UploadTest = import.meta.env.DEV ? lazy(() => import('./pages/UploadTest')) : null
@@ -48,6 +49,8 @@ export default function App() {
       <Routes>
         {/* Screen feed has no chrome at all. */}
         <Route path="/ecran" element={<Screen />} />
+        {/* Gate control app for the invitation cards: full screen, its own chrome, Firestore persistence (see firebase.ts). */}
+        <Route path="/controle" element={<Gate />} />
         <Route element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="/selfie" element={<Selfie />} />

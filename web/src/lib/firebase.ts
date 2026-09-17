@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth, signInAnonymously, connectAuthEmulator, type User } from 'firebase/auth'
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore'
+import { getFirestore, connectFirestoreEmulator, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore'
 import { getDatabase, connectDatabaseEmulator } from 'firebase/database'
 import { getStorage, connectStorageEmulator } from 'firebase/storage'
 import { getToken, initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check'
@@ -29,7 +29,10 @@ export const appCheck = env.VITE_RECAPTCHA_SITE_KEY
   : null
 
 export const auth = getAuth(app)
-export const db = getFirestore(app)
+// The gate app (/controle) keeps the guest list and the check-ins on the phone and must work with no network at the
+// doors: Firestore persistence there only. The public site keeps the plain client (snapshot-first Wall, no IndexedDB).
+const GATE_APP = typeof location !== 'undefined' && location.pathname.startsWith('/controle')
+export const db = GATE_APP ? initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }) : getFirestore(app)
 export const rtdb = getDatabase(app)
 export const storage = getStorage(app)
 
@@ -152,3 +155,9 @@ export const selectVideo = call<SelectVideoReq, { ok: true }>('selectVideo')
 export type ExportDailyRes = { date: string; national: number; newToday: number; prefecturesLit: number; countriesLit: number; videosSelected: number; backlog: number; sheet: boolean; csvPath: string }
 export const exportDailyNow = call<Record<string, never>, ExportDailyRes>('exportDailyNow', 300_000)
 export const exportSelected = call<Record<string, never>, { exported: number; skipped: number; folder: string | null }>('exportSelected', 300_000)
+
+// Invitations protocolaires (functions/src/invitations.ts)
+export type EventKind = 'parade' | 'dinner'
+export type CreateEventReq = { name: string; code: string; kind: EventKind; venue?: string; date?: string; time?: string; dressCode?: string; intro?: string; lead?: string; titleLines?: string[]; zoneLabel?: string; verso?: string; gates?: number }
+export const createEvent = call<CreateEventReq, { id: string }>('createEvent')
+export const issueInvitations = call<{ eventId: string; guestIds?: string[]; reissue?: boolean }, { issued: number; total: number }>('issueInvitations', 180_000)
