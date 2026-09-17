@@ -10,8 +10,9 @@ Run everything from the repository root with Node 20 or newer.
 ## Roles for the invitations
 
 ```bash
-cd functions && GOOGLE_CLOUD_PROJECT=guinea68 node ../scripts/set-role.mjs cabinet@example.com protocol   # Cabinet SGG: /admin/invitations
-cd functions && GOOGLE_CLOUD_PROJECT=guinea68 node ../scripts/set-role.mjs agent@example.com gate         # gate agents: /controle only
+node scripts/set-role.mjs cabinet@example.com protocol   # Cabinet SGG: /admin/invitations
+node scripts/set-role.mjs agent@example.com gate         # gate agents: /controle only
+# Claims are replaced each time: repeat the roles the person already has (e.g. moderator editor admin protocol gate).
 ```
 
 ## `seed-protocol.mjs` — the Presidency and Government links
