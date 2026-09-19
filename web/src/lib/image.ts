@@ -76,13 +76,16 @@ export function scaled(src: HTMLCanvasElement, size: number): HTMLCanvasElement 
   return c
 }
 
-/** Souvenir card: composed photo + participant number band. */
+/** Presidency green of the parade invitation card (card.ts INK.parade); the Minister asked for the same colour under every selfie. */
+const CARD_GREEN = '#0F3B2E'
+
+/** Souvenir card: composed photo + participant number band in the Presidency green. */
 export function souvenirCard(composed: HTMLCanvasElement, participantNumber: number, lang: 'fr' | 'en', logo: HTMLImageElement | null = null): HTMLCanvasElement {
   const w = composed.width, band = Math.round(w * 0.22)
   const c = document.createElement('canvas')
   c.width = w; c.height = w + band
   const ctx = c.getContext('2d')!
-  ctx.fillStyle = '#3273AC'; ctx.fillRect(0, 0, w, c.height)
+  ctx.fillStyle = CARD_GREEN; ctx.fillRect(0, 0, w, c.height)
   ctx.drawImage(composed, 0, 0)
   drawLogoChip(ctx, logo, w * 0.04, w + band * 0.1, band * 0.8)
   ctx.fillStyle = '#FFFFFF'
