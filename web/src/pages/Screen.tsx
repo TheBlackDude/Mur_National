@@ -3,10 +3,23 @@ import { useNationalCount } from '../components/LiveCounter'
 import { useI18n } from '../lib/i18n'
 import { useAppConfig, useSnapshot, type SnapshotItem } from '../lib/snapshot'
 import { MISSION_ISOS, placeName } from '../lib/places'
+import { GUINEA_PATHS, GUINEA_VIEWBOX, mapPoints, phaseAt, SEQUENCE_MAX_AGE_MS, T, useScreenConfig, type Lead, type ScreenConfig } from '../lib/screen'
 import prefectures from '../data/prefectures.json'
 
 const WINDOW = 24
 const ROTATE_MS = 20_000
+/** Dev only: /ecran?demo=1 plays the sequence on generated faces without Firebase (`npm run dev`). Stripped from production builds. */
+const DEMO = import.meta.env.DEV && new URLSearchParams(location.search).get('demo') === '1'
+const demoFace = (n: number, big = false) => `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="hsl(${(n * 47) % 360},55%,${big ? 40 : 55}%)"/><circle cx="50" cy="42" r="18" fill="rgba(255,255,255,.75)"/><ellipse cx="50" cy="92" rx="30" ry="24" fill="rgba(255,255,255,.75)"/><text x="50" y="30" font-size="14" text-anchor="middle" fill="#121826" font-family="sans-serif" font-weight="700">${n}</text></svg>`)}`
+const DEMO_RECENT: SnapshotItem[] = DEMO ? Array.from({ length: 120 }, (_, i) => ({ id: `d${i}`, type: 'photo', thumbUrl: demoFace(i + 61), participantNumber: i + 61, prefecture: 'KAL' })) : []
+const DEMO_CFG: ScreenConfig | null = DEMO ? {
+  leads: [
+    { id: 'p1', participantNumber: 1, thumbUrl: demoFace(1, true), vip: 'president' },
+    { id: 'm11', participantNumber: 11, thumbUrl: demoFace(11, true), vip: 'minister' },
+    { id: 'm12', participantNumber: 12, thumbUrl: demoFace(12, true), vip: 'minister', prefecture: 'KAL' },
+  ],
+  sequence: { id: 'demo', startAt: new Date(Date.now() + 1500) },
+} : null
 type Corner = 'tl' | 'tr' | 'bl' | 'br'
 const asset = (name: string) => `${import.meta.env.BASE_URL}${name}`
 
@@ -89,15 +102,24 @@ function Clock() {
 function Board() {
   const { t } = useI18n()
   const { targets } = useAppConfig()
-  const { snap } = useSnapshot(120_000)
-  const recent = snap?.recent ?? []
+  const { snap } = useSnapshot(120_000, !DEMO)
+  const recent = DEMO ? DEMO_RECENT : snap?.recent ?? []
   const [offset, setOffset] = useState(0)
   const [fade, setFade] = useState(true)
   const preload = useRef<HTMLImageElement[]>([])
+  // Sequence launched from the admin (config/screen): the faces leave, the leads appear, the map forms and holds.
+  const liveCfg = useScreenConfig()
+  const screenCfg = DEMO ? DEMO_CFG : liveCfg
+  const sequence = screenCfg?.sequence && Date.now() - screenCfg.sequence.startAt.getTime() < SEQUENCE_MAX_AGE_MS ? screenCfg.sequence : null
+  const active = sequence !== null
+  const activeRef = useRef(active)
+  activeRef.current = active
 
   // One interval for the whole life of the page; offset wraps over whatever the latest snapshot holds.
+  // Frozen during a sequence: a new window would remount the tiles and flash them behind the choreography.
   useEffect(() => {
     const id = window.setInterval(() => {
+      if (activeRef.current) return
       setFade(false)
       window.setTimeout(() => { setOffset((o) => o + WINDOW); setFade(true) }, 400)
     }, ROTATE_MS)
@@ -136,20 +158,23 @@ function Board() {
         </div>
       </header>
 
-      {/* Faces: 8 × 3 on a 16:9 screen, 4 × 6 on a vertical one */}
-      <ul className={`grid grid-cols-8 grid-rows-3 portrait:grid-cols-4 portrait:grid-rows-6 gap-[min(0.8vw,1.4vh)] content-stretch min-h-0 transition-opacity duration-400 motion-reduce:transition-none ${fade ? 'opacity-100' : 'opacity-0'}`} aria-live="off">
-        {tiles.map((it, i) => {
-          const isLatest = latest && it.id === latest.id
-          return (
-            <li key={`${it.id}-${offset}`} className={`screen-tile relative rounded-[min(1vw,1.8vh)] overflow-hidden bg-white/10 shadow-[0_0.6vh_1.6vh_rgba(0,0,0,.18)] ${isLatest ? 'ring-[0.35vh] ring-gold' : ''}`} style={{ animationDelay: `${i * 35}ms` }}>
-              <img src={it.thumbUrl} alt="" className="w-full h-full object-cover" />
-              <span className="absolute left-[0.6vw] bottom-[0.6vw] text-[min(0.95vw,1.7vh)] font-medium bg-white/92 text-ink rounded-full px-[0.6vw] py-[0.15vw] tabular">#{it.participantNumber}</span>
-              {isLatest && <span className="absolute right-[0.6vw] top-[0.6vw] text-[min(0.85vw,1.5vh)] font-bold uppercase tracking-wider bg-gold text-ink rounded-full px-[0.6vw] py-[0.15vw]">{t('screen.new')}</span>}
-              {it.type === 'video' && <span className="absolute left-[0.6vw] top-[0.6vw] text-[min(0.85vw,1.5vh)] font-medium bg-ink/70 text-white rounded-full px-[0.6vw] py-[0.15vw]">▶</span>}
-            </li>
-          )
-        })}
-      </ul>
+      {/* Faces: 8 × 3 on a 16:9 screen, 4 × 6 on a vertical one. During a sequence they leave one after the other and the choreography takes the row. */}
+      <div className="relative min-h-0">
+        <ul className={`h-full grid grid-cols-8 grid-rows-3 portrait:grid-cols-4 portrait:grid-rows-6 gap-[min(0.8vw,1.4vh)] content-stretch min-h-0 transition-opacity duration-400 motion-reduce:transition-none ${fade ? 'opacity-100' : 'opacity-0'}`} aria-live="off">
+          {tiles.map((it, i) => {
+            const isLatest = latest && it.id === latest.id
+            return (
+              <li key={`${it.id}-${offset}`} className={`${active ? 'screen-tile-out' : 'screen-tile'} relative rounded-[min(1vw,1.8vh)] overflow-hidden bg-white/10 shadow-[0_0.6vh_1.6vh_rgba(0,0,0,.18)] ${isLatest ? 'ring-[0.35vh] ring-gold' : ''}`} style={{ animationDelay: `${i * (active ? 60 : 35)}ms` }}>
+                <img src={it.thumbUrl} alt="" className="w-full h-full object-cover" />
+                <span className="absolute left-[0.6vw] bottom-[0.6vw] text-[min(0.95vw,1.7vh)] font-medium bg-white/92 text-ink rounded-full px-[0.6vw] py-[0.15vw] tabular">#{it.participantNumber}</span>
+                {isLatest && <span className="absolute right-[0.6vw] top-[0.6vw] text-[min(0.85vw,1.5vh)] font-bold uppercase tracking-wider bg-gold text-ink rounded-full px-[0.6vw] py-[0.15vw]">{t('screen.new')}</span>}
+                {it.type === 'video' && <span className="absolute left-[0.6vw] top-[0.6vw] text-[min(0.85vw,1.5vh)] font-medium bg-ink/70 text-white rounded-full px-[0.6vw] py-[0.15vw]">▶</span>}
+              </li>
+            )
+          })}
+        </ul>
+        {active && screenCfg && sequence && <Sequence key={sequence.id} cfg={screenCfg} startAt={sequence.startAt} recent={recent} />}
+      </div>
 
       {/* Footer: QR to the studio · latest participant + coverage · hashtag, then the flag hairline */}
       <footer className="grid grid-cols-[auto_1fr_auto] items-center gap-[2vw] pb-[2.2vh] portrait:grid-cols-[auto_1fr] portrait:gap-[3vw]">
@@ -175,6 +200,92 @@ function Board() {
         <p className="font-bold text-gold text-[min(1.8vw,3.2vh)] leading-none text-right portrait:col-span-2 portrait:text-center">#FierDetreGuineen</p>
       </footer>
       <div className="tricolor absolute left-0 right-0 bottom-0 h-[0.6vh]" aria-hidden><i /><i /><i /></div>
+    </div>
+  )
+}
+
+/* ---------- the sequence: leads one by one, then the map of Guinea made of every face ---------- */
+
+const MAP_TILES = 220
+const SEQ_TICK_MS = 100
+
+function Sequence({ cfg, startAt, recent }: { cfg: ScreenConfig; startAt: Date; recent: SnapshotItem[] }) {
+  const [elapsed, setElapsed] = useState(() => Date.now() - startAt.getTime())
+  useEffect(() => { const id = window.setInterval(() => setElapsed(Date.now() - startAt.getTime()), SEQ_TICK_MS); return () => clearInterval(id) }, [startAt])
+  const phase = phaseAt(elapsed, cfg.leads.length)
+  // Warm the leads' large renditions while the faces are leaving.
+  useEffect(() => { cfg.leads.forEach((l) => { const img = new Image(); img.decoding = 'async'; img.src = l.publicUrl ?? l.thumbUrl }) }, [cfg.leads])
+  if (phase.kind === 'out') return null
+  if (phase.kind === 'lead') return <Hero key={phase.index} lead={cfg.leads[phase.index]} durationMs={phase.durationMs} />
+  return <Mosaic recent={recent} leads={cfg.leads} sinceMs={phase.sinceMs} />
+}
+
+/** One chosen selfie, full height, its large rendition with a slow zoom and a gold rim; the label says who. */
+function Hero({ lead, durationMs }: { lead: Lead; durationMs: number }) {
+  const { t } = useI18n()
+  const label = lead.vip === 'president' ? t('screen.lead.president') : lead.vip === 'minister' ? t('screen.lead.minister') : t('screen.lead.participant', { n: lead.participantNumber.toLocaleString('fr-FR') })
+  const place = placeName(lead)
+  return (
+    <div className="screen-hero absolute inset-0 grid place-items-center">
+      <figure className="relative h-full max-h-full aspect-square max-w-full rounded-[min(1.6vw,2.8vh)] overflow-hidden ring-[0.4vh] ring-gold shadow-[0_2vh_6vh_rgba(0,0,0,.45)] bg-white/10">
+        <img src={lead.publicUrl ?? lead.thumbUrl} alt="" className="screen-hero-img w-full h-full object-cover" style={{ animationDuration: `${durationMs}ms` }} />
+        <figcaption className="absolute inset-x-0 bottom-0 px-[2vw] pb-[2vh] pt-[8vh] bg-gradient-to-t from-ink/85 to-transparent">
+          <p className="font-bold leading-tight text-[min(2.6vw,4.4vh)]">{label}</p>
+          <p className="text-white/85 tabular text-[min(1.3vw,2.2vh)] mt-[0.6vh]">n° {lead.participantNumber.toLocaleString('fr-FR')}{place ? ` · ${place}` : ''} · #FierDetreGuineen</p>
+        </figcaption>
+      </figure>
+    </div>
+  )
+}
+
+/** Every face of the snapshot flies to a cell of the country's silhouette; the gold outline settles once they are in place. */
+function Mosaic({ recent, leads, sinceMs }: { recent: SnapshotItem[]; leads: Lead[]; sinceMs: number }) {
+  const box = useRef<HTMLDivElement>(null)
+  const [size, setSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 })
+  const [formed, setFormed] = useState(false)
+  useEffect(() => {
+    const el = box.current
+    if (!el) return
+    const ro = new ResizeObserver(([e]) => setSize({ w: e.contentRect.width, h: e.contentRect.height }))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  useEffect(() => { const id = requestAnimationFrame(() => requestAnimationFrame(() => setFormed(true))); return () => cancelAnimationFrame(id) }, [])
+  const { points, step } = useMemo(() => mapPoints(MAP_TILES), [])
+  // Faces: the leads first so they sit on the coast, then the snapshot; a short list is reused around the map.
+  const faces = useMemo(() => {
+    const seen = new Set<string>()
+    const list: { id: string; thumbUrl: string }[] = []
+    for (const it of [...leads, ...recent]) if (!seen.has(it.id)) { seen.add(it.id); list.push({ id: it.id, thumbUrl: it.thumbUrl }) }
+    return list
+  }, [recent, leads])
+  if (faces.length === 0 || points.length === 0) return <div ref={box} className="absolute inset-0" />
+
+  const scale = Math.min(size.w / GUINEA_VIEWBOX.w, size.h / GUINEA_VIEWBOX.h) * 0.97
+  const ox = (size.w - GUINEA_VIEWBOX.w * scale) / 2, oy = (size.h - GUINEA_VIEWBOX.h * scale) / 2
+  const tile = step * scale * 0.9
+  const outlineOn = sinceMs > T.build + 800
+  return (
+    <div ref={box} className="absolute inset-0 overflow-hidden">
+      {size.w > 0 && (
+        <>
+          <svg viewBox={`0 0 ${GUINEA_VIEWBOX.w} ${GUINEA_VIEWBOX.h}`} className="absolute transition-opacity duration-[1500ms]" style={{ left: ox, top: oy, width: GUINEA_VIEWBOX.w * scale, height: GUINEA_VIEWBOX.h * scale, opacity: outlineOn ? 1 : 0 }} aria-hidden>
+            {GUINEA_PATHS.map((d, i) => <path key={i} d={d} fill="none" stroke="#EBAB58" strokeWidth={2.2} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />)}
+          </svg>
+          {points.map(([px, py], i) => {
+            const f = faces[i % faces.length]
+            const x = ox + px * scale - tile / 2, y = oy + py * scale - tile / 2
+            // Start: a loose cloud around the centre (where the last lead stood), then each tile flies to its cell, west to east.
+            const seed = ((i * 9301 + 49297) % 233280) / 233280
+            const sx = size.w / 2 + (seed - 0.5) * size.w * 0.5, sy = size.h / 2 + (((i * 7919) % 1000) / 1000 - 0.5) * size.h * 0.5
+            const delay = (i / points.length) * T.build
+            return (
+              <img key={`${i}-${f.id}`} src={f.thumbUrl} alt="" decoding="async" className="absolute rounded-[0.4vh] object-cover shadow-[0_0.3vh_0.8vh_rgba(0,0,0,.3)] will-change-transform"
+                style={{ width: tile, height: tile, left: 0, top: 0, opacity: formed ? 1 : 0, transform: formed ? `translate(${x}px, ${y}px)` : `translate(${sx}px, ${sy}px) scale(.25)`, transition: `transform 1400ms cubic-bezier(.2,.7,.2,1) ${delay}ms, opacity 600ms ease ${delay}ms` }} />
+            )
+          })}
+        </>
+      )}
     </div>
   )
 }

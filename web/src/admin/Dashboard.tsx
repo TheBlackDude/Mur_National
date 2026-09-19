@@ -6,6 +6,7 @@ import { useI18n } from '../lib/i18n'
 import { useAppConfig } from '../lib/snapshot'
 import prefectures from '../data/prefectures.json'
 import countries from '../data/countries.json'
+import ScreenSequence from './ScreenSequence'
 
 type Status = 'approved' | 'pending' | 'review' | 'rejected'
 const STATUSES: Status[] = ['approved', 'pending', 'review', 'rejected']
@@ -103,6 +104,7 @@ export default function Dashboard({ canEdit }: { canEdit: boolean }) {
         {canEdit && <button className="btn-outline h-9 px-3 text-xs" disabled={exporting} onClick={exportNow}>{t('dash.exportNow')}</button>}
       </div>
       {exportMsg && <p role="status" className={`rounded-xl text-sm p-3 ${exportMsg.ok ? 'bg-primary-tint text-primary' : 'bg-danger/10 text-danger'}`}>{exportMsg.text}</p>}
+      {canEdit && <ScreenSequence />}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {STATUSES.map((s) => (

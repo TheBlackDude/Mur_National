@@ -93,6 +93,10 @@ test('config: everyone reads the flags, editors and admins flip them', async () 
   await denied(updateDoc(doc(fs(u.maeiage), 'config/app'), { degraded: true }))
   await ok(updateDoc(doc(fs(u.editor), 'config/app'), { degraded: true }))
   await ok(updateDoc(doc(fs(u.admin), 'config/app'), { safeSearch: false }))
+  // config/screen: the giant-screen sequence is launched by editors from the dashboard; every screen reads it without signing in.
+  await ok(setDoc(doc(fs(u.editor), 'config/screen'), { leads: [], sequence: { id: 's1', startAt: new Date() } }, { merge: true }))
+  await ok(getDoc(doc(fs(u.anon), 'config/screen')))
+  await denied(setDoc(doc(fs(u.moderator), 'config/screen'), { sequence: null }, { merge: true }))
 })
 
 test('unknown collections are closed', async () => {

@@ -56,11 +56,16 @@ body { @apply bg-bg text-ink font-sans antialiased; margin: 0; }
 
   .tabular { font-variant-numeric: tabular-nums; }
 
-  /* Giant screen: tiles slide in when a new window of faces arrives. */
+  /* Giant screen: tiles slide in when a new window of faces arrives; during a sequence they leave one after the other. */
   .screen-tile { animation: screen-in .6s cubic-bezier(.2,.7,.2,1) both; }
+  .screen-tile-out { animation: screen-out .8s cubic-bezier(.4,0,.6,1) both; }
+  .screen-hero { animation: screen-in 1s cubic-bezier(.2,.7,.2,1) both; }
+  .screen-hero-img { animation: screen-zoom linear both; }
 }
 
 @keyframes screen-in { from { opacity: 0; transform: translateY(1.2vh) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes screen-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(3vh) scale(.85); } }
+@keyframes screen-zoom { from { transform: scale(1); } to { transform: scale(1.06); } }
 
 /* Phones: no 300 ms tap delay on controls, no rubber-band bounce behind the studio. */
 button, [role="button"], a, select, input { touch-action: manipulation; }

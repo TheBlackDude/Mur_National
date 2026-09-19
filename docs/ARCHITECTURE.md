@@ -78,6 +78,8 @@ events/{eventId}/checkins/{gid} gate, by, byEmail, at, offline, lifted{by, at, p
                                 // (supervisor lifts a « déjà entré » refusal at the gate) or delete it (admin cancels the entry).
 events/{eventId}/scans/{auto}   result: admitted | refused, reason, lifted, guestId, gate, by, at
 eventKeys/{eventId}             privateKey (PKCS8 PEM)          // no client access; signs `<code>.<guestId>.<shortCode>`
+config/screen       leads[] (≤ 10 selfies shown in order), sequence{ id, startAt } | null, updatedAt, updatedByEmail
+                    // giant-screen choreography launched from /admin/tableau (editors): faces leave, leads one by one, map of Guinea held until reset
 config/app          frames[], targets{ national, perPrefecture }, launchAt, revealAt, degraded (bool),
                     liveCounter (bool, default true), safeSearch, kioskAutoApprove, autoApproveClean (bool, default false), retention{days}
 ```
