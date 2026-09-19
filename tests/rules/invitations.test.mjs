@@ -68,7 +68,10 @@ test('checkins: first gate creates, a second create is refused, gates never chan
   await denied(setDoc(doc(fs(u.gate), 'events/ev1/checkins/g3'), { gate: 1, by: 'someone-else', at: new Date() }))
   await denied(updateDoc(doc(fs(u.gate2), 'events/ev1/checkins/g2'), { gate: 9 }))
   await denied(deleteDoc(doc(fs(u.gate2), 'events/ev1/checkins/g2')))
-  await ok(deleteDoc(doc(fs(u.protocol), 'events/ev1/checkins/g2'))) // the Cabinet can lift an entry after verification
+  // A supervisor (protocol) lifts a « déjà entré » refusal at the gate: the check-in is rewritten, the first entry kept under `lifted`.
+  await ok(setDoc(doc(fs(u.protocol), 'events/ev1/checkins/g2'), { gate: 5, by: 'protocol-1', at: new Date(), lifted: { by: 'protocol-1', at: new Date(), previousGate: 2, previousBy: 'gate-2' } }))
+  await denied(setDoc(doc(fs(u.gate2), 'events/ev1/checkins/g2'), { gate: 5, by: 'gate-2', at: new Date(), lifted: { by: 'gate-2', previousGate: 2 } }))
+  await ok(deleteDoc(doc(fs(u.protocol), 'events/ev1/checkins/g2'))) // the Cabinet cancels an entry from the admin: the card scans again
   await ok(getDocs(collection(fs(u.gate), 'events/ev1/checkins')))
   await denied(getDocs(collection(fs(u.editor), 'events/ev1/checkins')))
 })

@@ -18,16 +18,20 @@ const LS = { event: 'gate.event', gate: 'gate.gate' }
  * /controle — the gate app. Firestore persistence is on for this route (firebase.ts), so the guest list, photos and
  * check-ins live on the phone once "Préparer" has run; scanning and admitting need no network. A check-in is a
  * create-only document: when two phones admit the same card offline, the second write is rejected at sync and the
- * device shows the conflict. Scans (admitted or refused) are logged for the Cabinet's live view.
+ * device shows the conflict. Scans (admitted or refused) are logged for the Cabinet's live view. A supervisor
+ * (role protocol) can lift a « déjà entré » refusal after checking the identity: the check-in is rewritten with the
+ * new gate and time and keeps the first entry under `lifted` (rules let protocol update it; gates never can).
  */
 export default function Gate() {
   const { t } = useI18n()
   const [user, setUser] = useState<User | null | undefined>(undefined)
   const [roleOk, setRoleOk] = useState(false)
+  const [supervisor, setSupervisor] = useState(false) // role protocol (or admin): may lift a « déjà entré » refusal
   useEffect(() => onAuthStateChanged(auth, async (u) => {
     const staff = u && !u.isAnonymous ? u : null
     setUser(staff)
     const claims = staff ? (await staff.getIdTokenResult()).claims : {}
+    setSupervisor(claims.protocol === true || claims.admin === true)
     setRoleOk(claims.gate === true || claims.protocol === true || claims.admin === true)
   }), [])
 
@@ -50,14 +54,14 @@ export default function Gate() {
       </div>
     </Shell>
   )
-  return <Station user={user} />
+  return <Station user={user} supervisor={supervisor} />
 }
 
 function Shell({ children }: { children: React.ReactNode }) {
   return <div className="min-h-dvh bg-ink text-white px-5 py-8 grid content-center"><div className="mx-auto w-full max-w-sm">{children}</div></div>
 }
 
-function Station({ user }: { user: User }) {
+function Station({ user, supervisor }: { user: User; supervisor: boolean }) {
   const { t, lang } = useI18n()
   const [events, setEvents] = useState<EventDoc[]>([])
   const [eventId, setEventId] = useState<string>(() => localStorage.getItem(LS.event) ?? '')
@@ -103,6 +107,16 @@ function Station({ user }: { user: User }) {
     log('admitted', g.id, null)
     setVerdict(g.photo ? { kind: 'admitted', guest: g, at } : { kind: 'check', guest: g, at })
   }, [eventId, gate, user, log, t])
+
+  /** Supervisor only: re-admits a guest refused as already entered; the earlier entry stays in the document for the audit. */
+  const lift = useCallback((g: Guest, prior: Checkin) => {
+    const at = new Date()
+    const who = { by: user.uid, byEmail: user.email ?? null }
+    setDoc(doc(db, 'events', eventId, 'checkins', g.id), { gate, ...who, at: serverTimestamp(), offline: !navigator.onLine, lifted: { ...who, at: serverTimestamp(), previousGate: prior.gate, previousBy: prior.byEmail ?? prior.by, previousAt: prior.at ?? null } })
+      .catch(() => setConflict(t('gate.conflict', { name: guestName(g) })))
+    addDoc(collection(db, 'events', eventId, 'scans'), { result: 'admitted', guestId: g.id, reason: null, lifted: true, gate, ...who, at: serverTimestamp() }).catch(() => {})
+    setVerdict(g.photo ? { kind: 'admitted', guest: g, at } : { kind: 'check', guest: g, at })
+  }, [eventId, gate, user, t])
 
   const decide = useCallback(async (raw: string) => {
     if (!ev) return
@@ -157,13 +171,14 @@ function Station({ user }: { user: User }) {
       <header className="flex items-center gap-3 px-4 py-3 text-sm border-b border-white/10">
         <button className="font-bold" onClick={() => { setMode('setup'); setVerdict(null) }}>‹ {ev.code}</button>
         <span className="text-white/70">{t('gate.gateN', { n: gate })}</span>
+        {supervisor && <span className="text-[10px] uppercase tracking-wide text-gold border border-gold/60 rounded-full px-2 py-0.5">{t('gate.supervisor')}</span>}
         <span className="ml-auto tabular">{admittedCount} / {Array.from(guests.values()).filter((g) => g.status === 'active').length}</span>
         <span className={`w-2.5 h-2.5 rounded-full ${online ? 'bg-ok' : 'bg-gold'}`} title={online ? t('gate.online') : t('gate.offline')} />
       </header>
       {conflict && <p role="alert" className="bg-danger text-white text-sm px-4 py-2 flex gap-3"><span>{conflict}</span><button className="ml-auto underline" onClick={() => setConflict(null)}>OK</button></p>}
 
       {verdict ? (
-        <VerdictScreen v={verdict} time={time} onNext={() => setVerdict(null)} />
+        <VerdictScreen v={verdict} time={time} onNext={() => setVerdict(null)} onLift={supervisor && verdict.kind === 'refused' && verdict.reason === 'already' && verdict.guest && verdict.prior ? () => lift(verdict.guest!, verdict.prior!) : undefined} />
       ) : mode === 'scan' ? (
         <Scanner onCode={decide} />
       ) : mode === 'manual' ? (
@@ -181,12 +196,13 @@ function Station({ user }: { user: User }) {
   )
 }
 
-function VerdictScreen({ v, time, onNext }: { v: Verdict; time: (d: Date | null | undefined) => string; onNext: () => void }) {
+function VerdictScreen({ v, time, onNext, onLift }: { v: Verdict; time: (d: Date | null | undefined) => string; onNext: () => void; onLift?: () => void }) {
   const { t } = useI18n()
   const bg = v.kind === 'admitted' ? 'bg-ok' : v.kind === 'check' ? 'bg-primary' : 'bg-danger'
   const title = v.kind === 'admitted' ? t('gate.v.admitted') : v.kind === 'check' ? t('gate.v.check') : t('gate.v.refused')
   const g = 'guest' in v ? v.guest : undefined
-  useEffect(() => { const id = window.setTimeout(onNext, v.kind === 'refused' ? 12_000 : 8_000); return () => clearTimeout(id) }, [v, onNext])
+  // A supervisor deciding on a lift gets more time than the 12 s a plain refusal stays on screen.
+  useEffect(() => { const id = window.setTimeout(onNext, onLift ? 45_000 : v.kind === 'refused' ? 12_000 : 8_000); return () => clearTimeout(id) }, [v, onNext, onLift])
   return (
     <div className={`flex-1 ${bg} text-white flex flex-col`}>
       <p className="px-5 pt-6 text-4xl font-bold tracking-wide">{title}</p>
@@ -202,7 +218,9 @@ function VerdictScreen({ v, time, onNext }: { v: Verdict; time: (d: Date | null 
         {v.kind === 'refused' && (
           <p className="text-xl font-bold">{t(`gate.reason.${v.reason}` as TKey)}{v.reason === 'already' && v.prior ? ` · ${t('gate.gateN', { n: v.prior.gate })} · ${time(v.prior.at?.toDate())}` : ''}</p>
         )}
-        {v.kind === 'refused' && <p className="opacity-90">{t('gate.callSupervisor')}</p>}
+        {v.kind === 'refused' && !onLift && <p className="opacity-90">{t('gate.callSupervisor')}</p>}
+        {onLift && <p className="opacity-90 text-sm">{t('gate.liftHint')}</p>}
+        {onLift && <button className="btn-gold h-14 mt-1" onClick={onLift}>{t('gate.lift')}</button>}
         {v.kind === 'check' && <p className="opacity-90">{t('gate.checkId')}</p>}
         {(v.kind === 'admitted' || v.kind === 'check') && <p className="opacity-80 tabular">{time(v.at)}</p>}
       </div>

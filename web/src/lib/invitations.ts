@@ -6,6 +6,8 @@ export type EventDoc = {
   id: string; name: string; code: string; kind: EventKind
   venue: string; date: string; time: string; dressCode: string
   intro: string; lead: string; titleLines: string[]; zoneLabel: string; verso: string; gates: number
+  /** ISO day on which the retention job nulls every guest photo (7 days after the event); '' = never. */
+  photoPurgeOn?: string; photosPurgedAt?: Timestamp | null; photosPurged?: number
   publicKey: string; guestCount?: number; issuedCount?: number
   createdAt?: Timestamp; updatedAt?: Timestamp
 }
@@ -18,17 +20,19 @@ export type Guest = {
   photo: string | null
   code?: string | null; token?: string | null; issuedAt?: Timestamp | null
   status: GuestStatus
-  createdAt?: Timestamp; updatedAt?: Timestamp; revokedAt?: Timestamp | null
+  createdAt?: Timestamp; updatedAt?: Timestamp; revokedAt?: Timestamp | null; photoPurgedAt?: Timestamp | null
 }
-export type Checkin = { id: string; at: Timestamp | null; gate: number; by: string; byEmail: string | null; offline?: boolean }
+/** A supervisor (role protocol) lifted a « déjà entré » refusal at the gate: the earlier entry is kept here for the audit. */
+export type Lift = { by: string; byEmail: string | null; at: Timestamp | null; previousGate: number; previousBy: string; previousAt: Timestamp | null }
+export type Checkin = { id: string; at: Timestamp | null; gate: number; by: string; byEmail: string | null; offline?: boolean; lifted?: Lift }
 export type ScanResult = 'admitted' | 'refused'
 export type RefusalReason = 'unknown' | 'bad_signature' | 'other_event' | 'revoked' | 'already' | 'unreadable'
-export type Scan = { id: string; at: Timestamp | null; gate: number; by: string; byEmail: string | null; guestId: string | null; result: ScanResult; reason: RefusalReason | null }
+export type Scan = { id: string; at: Timestamp | null; gate: number; by: string; byEmail: string | null; guestId: string | null; result: ScanResult; reason: RefusalReason | null; lifted?: boolean }
 
 /** Defaults the Cabinet edits in the admin; everything printed on a card comes from the event document. */
-export const EVENT_PRESETS: Record<EventKind, Pick<EventDoc, 'name' | 'code' | 'venue' | 'date' | 'time' | 'dressCode' | 'intro' | 'lead' | 'titleLines' | 'zoneLabel' | 'gates'>> = {
-  parade: { name: 'Défilé militaire du 2 octobre', code: 'DEF', venue: 'Palais du Peuple', date: 'Vendredi 2 octobre 2026', time: '9 h', dressCode: '', intro: "a l'honneur d'inviter", lead: '', titleLines: ['Défilé militaire du 68e anniversaire', "de l'Indépendance nationale"], zoneLabel: 'Tribune', gates: 6 },
-  dinner: { name: 'Dîner du Président de la République', code: 'DIN', venue: 'Palais présidentiel', date: 'Vendredi 2 octobre 2026', time: '20 h', dressCode: 'Tenue de soirée', intro: 'prie', lead: "de lui faire l'honneur d'assister au", titleLines: ['Dîner de la Fête Nationale'], zoneLabel: 'Table', gates: 2 },
+export const EVENT_PRESETS: Record<EventKind, Pick<EventDoc, 'name' | 'code' | 'venue' | 'date' | 'time' | 'dressCode' | 'intro' | 'lead' | 'titleLines' | 'zoneLabel' | 'gates'> & { photoPurgeOn: string }> = {
+  parade: { name: 'Défilé militaire du 2 octobre', code: 'DEF', venue: 'Palais du Peuple', date: 'Vendredi 2 octobre 2026', time: '9 h', dressCode: '', intro: "a l'honneur d'inviter", lead: '', titleLines: ['Défilé militaire du 68e anniversaire', "de l'Indépendance nationale"], zoneLabel: 'Tribune', gates: 6, photoPurgeOn: '2026-10-09' },
+  dinner: { name: 'Dîner du Président de la République', code: 'DIN', venue: 'Palais présidentiel', date: 'Vendredi 2 octobre 2026', time: '20 h', dressCode: 'Tenue de soirée', intro: 'prie', lead: "de lui faire l'honneur d'assister au", titleLines: ['Dîner de la Fête Nationale'], zoneLabel: 'Table', gates: 2, photoPurgeOn: '2026-10-09' },
 }
 
 export const CATEGORY_SUGGESTIONS = ['Membre du Gouvernement', 'Institution républicaine', 'Corps diplomatique', 'Délégation étrangère', 'Forces de défense et de sécurité', 'Invité officiel', 'Presse']

@@ -28,6 +28,7 @@ export default function EventPage() {
   const [progress, setProgress] = useState<{ done: number; total: number; label: string } | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [cancelling, setCancelling] = useState<string | null>(null) // guest id whose entry is about to be cancelled (two clicks)
 
   useEffect(() => onSnapshot(doc(db, 'events', eventId), (s) => setEv(s.exists() ? ({ id: s.id, ...(s.data() as Omit<EventDoc, 'id'>) }) : null), () => setEv(null)), [eventId])
   useEffect(() => onSnapshot(query(collection(db, 'events', eventId, 'guests'), orderBy('lastName')), (s) => setGuests(s.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Guest, 'id'>) })))), [eventId])
@@ -60,6 +61,12 @@ export default function EventPage() {
   }
   async function setStatus(g: Guest, status: Guest['status']) {
     try { await updateDoc(doc(db, 'events', eventId, 'guests', g.id), { status, revokedAt: status === 'revoked' ? serverTimestamp() : null, updatedAt: serverTimestamp() }) } catch (e) { fail(e) }
+  }
+  /** Lifts an entry from the admin: the check-in document goes, the card can be scanned again at any gate. */
+  async function cancelEntry(g: Guest) {
+    if (cancelling !== g.id) { setCancelling(g.id); window.setTimeout(() => setCancelling((c) => (c === g.id ? null : c)), 6000); return }
+    setCancelling(null)
+    try { await deleteDoc(doc(db, 'events', eventId, 'checkins', g.id)); say(t('inv.entryCancelled', { name: guestName(g) })) } catch (e) { fail(e) }
   }
   async function remove(g: Guest) {
     try { await deleteDoc(doc(db, 'events', eventId, 'guests', g.id)) } catch (e) { fail(e) }
@@ -127,7 +134,7 @@ export default function EventPage() {
 
   const status = (g: Guest) => {
     const c = checkins[g.id]
-    if (c) return <Tag tone="ok">{t('inv.st.in', { gate: c.gate, time: c.at ? c.at.toDate().toLocaleTimeString(lang === 'fr' ? 'fr-FR' : 'en-GB', { hour: '2-digit', minute: '2-digit' }) : '…' })}</Tag>
+    if (c) return <Tag tone="ok">{t('inv.st.in', { gate: c.gate, time: c.at ? c.at.toDate().toLocaleTimeString(lang === 'fr' ? 'fr-FR' : 'en-GB', { hour: '2-digit', minute: '2-digit' }) : '…' })}{c.lifted ? ` · ${t('inv.st.lifted')}` : ''}</Tag>
     if (g.status === 'revoked') return <Tag tone="danger">{t('inv.st.revoked')}</Tag>
     if (!g.token) return <Tag>{t('inv.st.unissued')}</Tag>
     return <Tag tone="primary">{t('inv.st.issued')}</Tag>
@@ -140,6 +147,7 @@ export default function EventPage() {
           <Link to="/admin/invitations" className="text-sm text-muted hover:text-primary">← {t('inv.title')}</Link>
           <h2 className="text-lg font-bold mt-1 flex items-center gap-2"><span className={`rounded-full px-2.5 py-0.5 text-xs font-bold tabular ${ev.kind === 'dinner' ? 'bg-ink text-gold' : 'bg-primary text-white'}`}>{ev.code}</span>{ev.name}</h2>
           <p className="text-sm text-muted">{[ev.date, ev.venue, ev.time, ev.dressCode].filter(Boolean).join(' · ')}</p>
+          {ev.photosPurgedAt && <p className="text-xs text-warn mt-1">{t('inv.photosPurged', { date: fmtDate(ev.photosPurgedAt, lang) })}</p>}
         </div>
         <button className="btn-outline h-10 px-4 text-sm" onClick={() => setSettingsOpen((o) => !o)}>{t('inv.settings')}</button>
       </div>
@@ -196,7 +204,8 @@ export default function EventPage() {
                   {g.status === 'active'
                     ? <button className="text-danger text-xs mr-3" onClick={() => setStatus(g, 'revoked')}>{t('inv.revoke')}</button>
                     : <><button className="text-primary text-xs mr-3" onClick={() => setStatus(g, 'active')}>{t('inv.restore')}</button><button className="text-primary text-xs mr-3" onClick={() => issue([g.id])}>{t('inv.reissue')}</button></>}
-                  {!g.token && <button className="text-muted text-xs" onClick={() => remove(g)}>{t('inv.delete')}</button>}
+                  {!g.token && <button className="text-muted text-xs mr-3" onClick={() => remove(g)}>{t('inv.delete')}</button>}
+                  {checkins[g.id] && <button className={`text-xs ${cancelling === g.id ? 'btn-outline !border-danger !text-danger h-7 px-2' : 'text-danger'}`} onClick={() => cancelEntry(g)}>{cancelling === g.id ? t('inv.cancelEntryConfirm') : t('inv.cancelEntry')}</button>}
                 </td>
               </tr>
             ))}
@@ -213,7 +222,7 @@ export default function EventPage() {
             {scans.map((s) => {
               const g = s.guestId ? byId.get(s.guestId) : null
               return <li key={s.id} className="flex flex-wrap gap-x-3 border-b border-rule py-1.5">
-                <span className={`font-medium ${s.result === 'admitted' ? 'text-ok' : 'text-danger'}`}>{t(s.result === 'admitted' ? 'inv.scan.admitted' : 'inv.scan.refused')}{s.reason ? ` · ${t(`gate.reason.${s.reason}` as TKey)}` : ''}</span>
+                <span className={`font-medium ${s.result === 'admitted' ? 'text-ok' : 'text-danger'}`}>{t(s.result === 'admitted' ? 'inv.scan.admitted' : 'inv.scan.refused')}{s.reason ? ` · ${t(`gate.reason.${s.reason}` as TKey)}` : s.lifted ? ` · ${t('inv.scan.lifted')}` : ''}</span>
                 <span>{g ? guestName(g) : s.guestId ?? '—'}</span>
                 <span className="text-muted ml-auto tabular">{t('gate.gateN', { n: s.gate })} · {s.byEmail ?? s.by} · {fmtDate(s.at ?? undefined, lang)}</span>
               </li>
@@ -239,7 +248,7 @@ function Tag({ children, tone = 'muted' }: { children: React.ReactNode; tone?: '
 /** Card settings: everything printed on the cards, saved on the event document (rules keep code and key untouchable). */
 function Settings({ ev, onSaved, onError }: { ev: EventDoc; onSaved: () => void; onError: (e: unknown) => void }) {
   const { t } = useI18n()
-  const [f, setF] = useState({ name: ev.name, venue: ev.venue ?? '', date: ev.date ?? '', time: ev.time ?? '', dressCode: ev.dressCode ?? '', intro: ev.intro ?? '', lead: ev.lead ?? '', titleLines: (ev.titleLines ?? []).join('\n'), zoneLabel: ev.zoneLabel ?? '', verso: ev.verso ?? '', gates: ev.gates ?? 2 })
+  const [f, setF] = useState({ name: ev.name, venue: ev.venue ?? '', date: ev.date ?? '', time: ev.time ?? '', dressCode: ev.dressCode ?? '', intro: ev.intro ?? '', lead: ev.lead ?? '', titleLines: (ev.titleLines ?? []).join('\n'), zoneLabel: ev.zoneLabel ?? '', verso: ev.verso ?? '', gates: ev.gates ?? 2, photoPurgeOn: ev.photoPurgeOn ?? '' })
   const [busy, setBusy] = useState(false)
   async function save() {
     setBusy(true)
@@ -258,6 +267,7 @@ function Settings({ ev, onSaved, onError }: { ev: EventDoc; onSaved: () => void;
       {field('zoneLabel', t('inv.f.zoneLabel'))}
       <label className="grid gap-1"><span className="label">{t('inv.f.gates')}</span><input className="input" type="number" min={1} max={20} value={f.gates} onChange={(e) => setF({ ...f, gates: Number(e.target.value) })} /></label>
       <label className="grid gap-1 sm:col-span-2"><span className="label">{t('inv.f.verso')}</span><textarea className="input min-h-32" value={f.verso} onChange={(e) => setF({ ...f, verso: e.target.value })} /></label>
+      <label className="grid gap-1"><span className="label">{t('inv.f.photoPurgeOn')}</span><input className="input" type="date" value={f.photoPurgeOn} onChange={(e) => setF({ ...f, photoPurgeOn: e.target.value })} /><span className="text-[11px] text-muted">{t('inv.f.photoPurgeHint')}</span></label>
       <div className="sm:col-span-2 flex justify-end"><button className="btn-primary h-11 px-5" type="submit" disabled={busy}>{t('inv.save')}</button></div>
     </form>
   )

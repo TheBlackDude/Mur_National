@@ -69,11 +69,14 @@ protocolTokens/{code} token, tier              // PRESIDENCE / GOUVERNEMENT; no 
 
 // Invitations protocolaires (parade of 2 Oct, President's dinner) — functions/src/invitations.ts
 events/{eventId}                name, code (3 letters, in every QR), kind: parade | dinner, venue, date, time, dressCode,
-                                intro, lead, titleLines[], zoneLabel, verso, gates, publicKey (ECDSA P-256 SPKI), guestCount, issuedCount
+                                intro, lead, titleLines[], zoneLabel, verso, gates, publicKey (ECDSA P-256 SPKI), guestCount, issuedCount,
+                                photoPurgeOn (ISO day, 7 days after the event), photosPurgedAt, photosPurged   // retention job nulls guests.photo
 events/{eventId}/guests/{gid}   civility, firstName, lastName, title, category, zone, seat, phone, photo (JPEG data URL ≈ 20 KB,
                                 never printed), code (8 chars, unique per event), token (QR payload), status: active | revoked
-events/{eventId}/checkins/{gid} gate, by, byEmail, at, offline   // create-only for gates: first phone wins, the second sync is rejected
-events/{eventId}/scans/{auto}   result: admitted | refused, reason, guestId, gate, by, at
+events/{eventId}/checkins/{gid} gate, by, byEmail, at, offline, lifted{by, at, previousGate, previousBy, previousAt}
+                                // create-only for gates: first phone wins, the second sync is rejected. Protocol may overwrite it
+                                // (supervisor lifts a « déjà entré » refusal at the gate) or delete it (admin cancels the entry).
+events/{eventId}/scans/{auto}   result: admitted | refused, reason, lifted, guestId, gate, by, at
 eventKeys/{eventId}             privateKey (PKCS8 PEM)          // no client access; signs `<code>.<guestId>.<shortCode>`
 config/app          frames[], targets{ national, perPrefecture }, launchAt, revealAt, degraded (bool),
                     liveCounter (bool, default true), safeSearch, kioskAutoApprove, autoApproveClean (bool, default false), retention{days}
@@ -149,7 +152,7 @@ Browser-side compositing is the one-week trade-off: it is instant and free. Serv
 - Storage rules: `uploads/{uid}/*` writable only by that `uid`, `image/jpeg`, < 2 MB; `videos/*` < 150 MB with a valid mission token checked by the function; `public/`, `thumbs/`, `snapshot/` world-readable.
 - App Check on Storage, Firestore and Functions. Rate limit per `uid` per hour in RTDB, higher ceiling for kiosk mode (kiosk devices sign in with a staff account).
 - Duplicates: pHash Hamming distance ≤ 6 → `duplicateOf` set, routed to L2.
-- Personal data: explicit public-display consent checkbox stored with a timestamp; minors only through supervised kiosks (`kiosk == true` and `minorSupervised`); no email/phone collected; retention policy and legal notice pages in FR/EN. Retention job deletes `uploads/` originals 60 days after the week.
+- Personal data: explicit public-display consent checkbox stored with a timestamp; minors only through supervised kiosks (`kiosk == true` and `minorSupervised`); no email/phone collected; retention policy and legal notice pages in FR/EN. Retention job deletes `uploads/` originals 60 days after the week and the invitation guest photos on each event's `photoPurgeOn` (9 Oct 2026 for the 2 Oct events); gate phones drop their offline copy at the next sync.
 - Sovereignty gap to state openly to the client: the concept note promises hosting on the national Tier III data centre. This design runs on Google Cloud (`europe-west1`). Mitigation: a nightly Firestore export + `gsutil rsync` of Storage to a bucket or server in Conakry, so the State holds a complete sovereign copy, and the post-week platform can be migrated there.
 
 ## 7. Capacity notes (500 000 contributions in eight days)

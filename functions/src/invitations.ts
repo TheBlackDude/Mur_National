@@ -12,12 +12,16 @@ import { db, FieldValue, requireRole } from './lib.js'
  *   events/{eventId}/scans/{auto}    every scan, admitted or refused, for the live view
  *   eventKeys/{eventId}              ECDSA P-256 private key (PEM); no client ever reads it
  *
+ * Guest photos are personal data kept for the control only: `events.photoPurgeOn` (ISO day, edited by the Cabinet,
+ * 7 days after the event) is when the retention job nulls every photo of the event (retention.ts).
+ *
  * The QR carries `A68.<eventCode>.<guestId>.<code>.<signature>`; gate phones verify the signature with the event's
  * public key (WebCrypto) and look the guest up in their offline copy, so a forged or altered code fails without network.
  */
 
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // no 0/O, 1/I
 const EVENT_CODE = /^[A-Z]{3}$/
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/
 const MAX_GUESTS_PER_CALL = 1500
 
 function shortCode(): string {
@@ -42,6 +46,7 @@ type EventReq = {
   name: string; code: string; kind: 'parade' | 'dinner'
   venue?: string; date?: string; time?: string; dressCode?: string
   intro?: string; lead?: string; titleLines?: string[]; zoneLabel?: string; verso?: string; gates?: number
+  photoPurgeOn?: string
 }
 
 const str = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '')
@@ -70,6 +75,7 @@ export const createEvent = onCall<EventReq>(async (req) => {
     intro: str(d.intro, 120), lead: str(d.lead, 120), titleLines: Array.isArray(d.titleLines) ? d.titleLines.slice(0, 3).map((l) => str(l, 80)) : [],
     zoneLabel: str(d.zoneLabel, 30) || (d.kind === 'dinner' ? 'Table' : 'Tribune'),
     verso: str(d.verso, 2000), gates: Math.min(20, Math.max(1, Number(d.gates) || (d.kind === 'dinner' ? 2 : 6))),
+    photoPurgeOn: ISO_DAY.test(str(d.photoPurgeOn, 10)) ? str(d.photoPurgeOn, 10) : '', photosPurgedAt: null,
     publicKey: spki.toString('base64'),
     guestCount: 0, issuedCount: 0,
     createdBy: auth.uid, createdByEmail: (auth.token.email as string | undefined) ?? null,

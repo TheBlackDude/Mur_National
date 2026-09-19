@@ -57,6 +57,9 @@ export default function Invitations() {
           {field('date', t('inv.f.date'))}
           {field('time', t('inv.f.time'))}
           {field('dressCode', t('inv.f.dressCode'))}
+          <label className="grid gap-1"><span className="label">{t('inv.f.photoPurgeOn')}</span>
+            <input className="input" type="date" value={form.photoPurgeOn} onChange={(e) => setForm({ ...form, photoPurgeOn: e.target.value })} />
+            <span className="text-[11px] text-muted">{t('inv.f.photoPurgeHint')}</span></label>
           {field('intro', t('inv.f.intro'))}
           {field('lead', t('inv.f.lead'))}
           <label className="grid gap-1 sm:col-span-2"><span className="label">{t('inv.f.titleLines')}</span>

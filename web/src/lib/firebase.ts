@@ -158,6 +158,6 @@ export const exportSelected = call<Record<string, never>, { exported: number; sk
 
 // Invitations protocolaires (functions/src/invitations.ts)
 export type EventKind = 'parade' | 'dinner'
-export type CreateEventReq = { name: string; code: string; kind: EventKind; venue?: string; date?: string; time?: string; dressCode?: string; intro?: string; lead?: string; titleLines?: string[]; zoneLabel?: string; verso?: string; gates?: number }
+export type CreateEventReq = { name: string; code: string; kind: EventKind; venue?: string; date?: string; time?: string; dressCode?: string; intro?: string; lead?: string; titleLines?: string[]; zoneLabel?: string; verso?: string; gates?: number; photoPurgeOn?: string }
 export const createEvent = call<CreateEventReq, { id: string }>('createEvent')
 export const issueInvitations = call<{ eventId: string; guestIds?: string[]; reissue?: boolean }, { issued: number; total: number }>('issueInvitations', 180_000)
