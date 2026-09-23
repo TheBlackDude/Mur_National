@@ -1,0 +1,125 @@
+titre_document = "Le Comité Central du PDG"
+sur_titre = "Parti Démocratique de Guinée"
+titre = "Le Comité Central du PDG"
+date = "Membres du Comité Central"
+date_italique = true
+source = [
+  "<b>Source :</b> presse nationale, « Le Comité Central du PDG ».",
+  "Portraits restaurés à partir des archives de presse — noms et titres tels que publiés.",
+  "Présidence de la République · Secrétariat Général du Gouvernement",
+]
+
+[nettoyage]
+marge = 3
+ombres = 0.5
+
+[pied]
+mention = "68<sup>e</sup> Fête Nationale\n2 octobre 2026"
+logo = "logo68.png"
+
+css = """
+.grid { margin-top: 14mm; column-gap: 12mm; }
+"""
+
+[[groupes]]
+titre = ""
+colonnes = 4
+ratio = "11 / 12"
+largeur_pct = 86
+espace_lignes_mm = 14
+
+[[groupes.membres]]
+cle = "sow"
+grade = ""
+nom = "Mariama SOW"
+fonction = ""
+
+[[groupes.membres]]
+cle = "sampil"
+grade = ""
+nom = "Mamadou SAMPIL"
+fonction = ""
+
+[[groupes.membres]]
+cle = "kdiakite"
+grade = ""
+nom = "Koumba DIAKITÉ"
+fonction = ""
+
+[[groupes.membres]]
+cle = "atoure"
+grade = "El Hadj"
+nom = "Amara TOURÉ"
+fonction = ""
+
+[[groupes.membres]]
+cle = "dieng"
+grade = ""
+nom = "Amadou DIENG"
+fonction = ""
+
+[[groupes.membres]]
+cle = "sy"
+grade = ""
+nom = "Mahmoudou SY"
+fonction = ""
+
+[[groupes.membres]]
+cle = "bahkaba"
+grade = "Docteur"
+nom = "Mamadou Bah KABA"
+fonction = ""
+
+[[groupes.membres]]
+cle = "skaba"
+grade = ""
+nom = "Sékou KABA"
+fonction = "Commissaire Général de la Révolution"
+
+[[groupes.membres]]
+cle = "conde"
+grade = "Général"
+nom = "Toyah CONDÉ"
+fonction = ""
+
+[[groupes.membres]]
+cle = "smkeita"
+grade = ""
+nom = "Sidy Mohamed KEÏTA"
+fonction = ""
+
+[[groupes.membres]]
+cle = "asow"
+grade = ""
+nom = "Aguibou SOW"
+fonction = ""
+
+[[groupes.membres]]
+cle = "mkaba"
+grade = ""
+nom = "Mamadi KABA"
+fonction = ""
+
+[[groupes.membres]]
+cle = "ghussein"
+grade = ""
+nom = "Ismaël GHUSSEIN"
+fonction = ""
+
+[[groupes.membres]]
+cle = "siaka"
+grade = "Commandant"
+nom = "Siaka TOURÉ"
+fonction = ""
+
+[[groupes.membres]]
+cle = "traore"
+grade = "Colonel"
+nom = "Diarra TRAORÉ"
+fonction = ""
+
+[[groupes.membres]]
+cle = "dia"
+grade = ""
+nom = "Mohamed Hady DIA"
+fonction = ""

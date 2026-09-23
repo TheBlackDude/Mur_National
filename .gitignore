@@ -13,3 +13,11 @@ web/tsconfig.tsbuildinfo
 # scripts/ tooling and generated secrets/posters
 scripts/node_modules/
 scripts/out/
+
+# restauration/ — outil affiches (environnement et fichiers générés)
+restauration/.venv/
+restauration/projets/*/portraits/
+restauration/projets/*/sortie/
+restauration/projets/*/cadres_debug*.jpg
+restauration/projets/*/planche_*.jpg
+__pycache__/

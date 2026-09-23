@@ -1,0 +1,184 @@
+titre_document = "Comité Militaire de Redressement National — avril 1984"
+sur_titre = "Deuxième République"
+titre = "Le Comité Militaire\nde Redressement National"
+date = "CMRN · Avril 1984"
+source = [
+  "<b>Source :</b> <i>Horoya</i> n° 00, dimanche 8 avril 1984, « Comité Militaire de Redressement National (CMRN) ».",
+  "Portraits restaurés à partir des archives de presse — grades tels que publiés en 1984.",
+  "Présidence de la République · Secrétariat Général du Gouvernement",
+]
+
+[nettoyage]
+marge = 3
+ombres = 0.0
+
+[pied]
+mention = "68<sup>e</sup> Fête Nationale\n2 octobre 2026"
+logo = "logo68.png"
+
+css = """
+.leaders { margin: 11mm 0 12mm; }
+.grid { margin-top: 3mm; }
+"""
+
+[[dirigeants]]
+cle = "conte"
+grade = "Colonel"
+nom = "Lansana CONTÉ"
+fonction = "Président du Comité Militaire de Redressement National"
+hauteur_mm = 126
+
+[[groupes]]
+titre = "Membres du CMRN"
+colonnes = 6
+ratio = "10 / 9"
+largeur_pct = 100
+espace_lignes_mm = 16
+
+[[groupes.membres]]
+cle = "dtraore"
+grade = "Colonel"
+nom = "Diarra TRAORÉ"
+fonction = ""
+
+[[groupes.membres]]
+cle = "akaba"
+grade = "Commandant"
+nom = "Abdourahamane KABA"
+fonction = ""
+
+[[groupes.membres]]
+cle = "mcamara"
+grade = "Commandant"
+nom = "Mankan CAMARA"
+fonction = ""
+
+[[groupes.membres]]
+cle = "osow"
+grade = "Commandant"
+nom = "Ousmane SOW"
+fonction = ""
+
+[[groupes.membres]]
+cle = "kcamara"
+grade = "Commandant"
+nom = "Kékoura CAMARA"
+fonction = ""
+
+[[groupes.membres]]
+cle = "fofana"
+grade = "Commandant"
+nom = "Alhousseny FOFANA"
+fonction = ""
+
+[[groupes.membres]]
+cle = "smkeita"
+grade = "Commandant"
+nom = "Sidy Mohamed KEITA"
+fonction = ""
+
+[[groupes.membres]]
+cle = "sakho"
+grade = "Capitaine"
+nom = "M. Lamine SAKHO"
+fonction = ""
+
+[[groupes.membres]]
+cle = "bayo"
+grade = "Capitaine"
+nom = "Mamadi BAYO"
+fonction = ""
+portrait = "../gouvernement-conte-1984/portraits/p2r3c1.png"
+
+[[groupes.membres]]
+cle = "baldet"
+grade = "Capitaine"
+nom = "Mamadou BALDET"
+fonction = ""
+portrait = "../gouvernement-conte-1984/portraits/p2r2c0.png"
+
+[[groupes.membres]]
+cle = "lkeita"
+grade = "Capitaine"
+nom = "Lanciné KEITA"
+fonction = ""
+portrait = "../gouvernement-conte-1984/portraits/p1r0c2.png"
+
+[[groupes.membres]]
+cle = "pbarry"
+grade = "Capitaine"
+nom = "M. Pathé BARRY"
+fonction = ""
+portrait = "../gouvernement-conte-1984/portraits/p2r0c0.png"
+
+[[groupes.membres]]
+cle = "ftoure"
+grade = "Capitaine"
+nom = "Faciné TOURÉ"
+fonction = ""
+
+[[groupes.membres]]
+cle = "fmcamara"
+grade = "Capitaine"
+nom = "Fodé Momo CAMARA"
+fonction = ""
+
+[[groupes.membres]]
+cle = "jtraore"
+grade = "Capitaine"
+nom = "Jean TRAORÉ"
+fonction = ""
+
+[[groupes.membres]]
+cle = "khebet"
+grade = "Capitaine"
+nom = "M. Oumar KHEBET"
+fonction = ""
+
+[[groupes.membres]]
+cle = "mtraore"
+grade = "Capitaine"
+nom = "Mohamed TRAORÉ"
+fonction = ""
+
+[[groupes.membres]]
+cle = "sako"
+grade = "Capitaine"
+nom = "Bakary SAKO"
+fonction = ""
+
+[[groupes.membres]]
+cle = "straore"
+grade = "Capitaine"
+nom = "Sékou TRAORÉ"
+fonction = ""
+
+[[groupes.membres]]
+cle = "adiallo"
+grade = "Capitaine"
+nom = "Alpha O. DIALLO (Barou)"
+fonction = ""
+
+[[groupes.membres]]
+cle = "kcamara2"
+grade = "Capitaine"
+nom = "Kerfalla CAMARA"
+fonction = ""
+
+[[groupes.membres]]
+cle = "abdiallo"
+grade = "Lieutenant"
+nom = "Abdourahamane DIALLO"
+fonction = ""
+
+[[groupes.membres]]
+cle = "zoumanigui"
+grade = "Adjudant-chef"
+nom = "Gbago Joseph ZOUMANIGUI"
+fonction = ""
+
+[[groupes.membres]]
+cle = "stoure"
+grade = "Adjudant"
+nom = "Sékou TOURÉ"
+fonction = ""

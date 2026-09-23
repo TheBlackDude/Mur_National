@@ -1,0 +1,277 @@
+titre_document = "Gouvernement de la République — avril 1984"
+sur_titre = "Gouvernement de la République"
+titre = "Le premier Gouvernement\ndu Président Lansana Conté"
+date = "Avril 1984"
+source = [
+  "<b>Source :</b> <i>Horoya</i> n° 00, dimanche 8 avril 1984, pages 4–5, « Gouvernement de la République ».",
+  "Portraits restaurés à partir des archives de presse — grades et fonctions tels que publiés en 1984.",
+  "Présidence de la République · Secrétariat Général du Gouvernement",
+]
+
+[nettoyage]
+marge = 4
+ombres = 0.0
+
+[pied]
+mention = "68<sup>e</sup> Fête Nationale\n2 octobre 2026"
+logo = "logo68.png"
+
+[[dirigeants]]
+cle = "conte"
+grade = "Colonel"
+nom = "Lansana CONTÉ"
+fonction = "Président de la République, Chef de l’État"
+hauteur_mm = 108
+
+[[dirigeants]]
+cle = "traore"
+grade = "Colonel"
+nom = "Diarra TRAORÉ"
+fonction = "Premier Ministre, Chef du Gouvernement"
+hauteur_mm = 91
+
+[[groupes]]
+titre = "Membres du Gouvernement"
+colonnes = 8
+ratio = "1 / 1"
+largeur_pct = 100
+
+[[groupes.membres]]
+cle = "p1r0c0"
+grade = "Capitaine"
+nom = "Faciné TOURÉ"
+fonction = "Ministre des Affaires Étrangères"
+
+[[groupes.membres]]
+cle = "p1r0c1"
+grade = "Capitaine"
+nom = "Fodé Momo CAMARA"
+fonction = "Ministre de la Coopération Internationale"
+
+[[groupes.membres]]
+cle = "p1r0c2"
+grade = "Capitaine"
+nom = "Lanciné KEITA"
+fonction = "Ministre de la Défense Nationale"
+
+[[groupes.membres]]
+cle = "p1r0c3"
+grade = "Monsieur"
+nom = "Hervé VINCENT"
+fonction = "Ministre de l’Intérieur et de la Sécurité"
+
+[[groupes.membres]]
+cle = "p1r1c0"
+grade = "Monsieur"
+nom = "Richard HABA"
+fonction = "Ministre des Affaires Économiques"
+
+[[groupes.membres]]
+cle = "p1r1c1"
+grade = "Monsieur"
+nom = "Kémoko KEITA"
+fonction = "Ministre des Finances"
+
+[[groupes.membres]]
+cle = "p1r1c2"
+grade = "Chef de Bataillon"
+nom = "Sory DOUMBOUYA"
+fonction = "Ministre du Contrôle d’État"
+
+[[groupes.membres]]
+cle = "p1r1c3"
+grade = "Capitaine"
+nom = "Baourou CONDÉ"
+fonction = "Ministre du Plan et des Statistiques"
+
+[[groupes.membres]]
+cle = "p1r2c0"
+grade = "Capitaine"
+nom = "Abou CAMARA"
+fonction = "Ministre du Commerce Intérieur"
+
+[[groupes.membres]]
+cle = "p1r2c1"
+grade = "Capitaine"
+nom = "M. Oumar KHEBET"
+fonction = "Ministre du Commerce Extérieur"
+
+[[groupes.membres]]
+cle = "p1r2c2"
+grade = "Capitaine"
+nom = "Youssouf DIALLO"
+fonction = "Ministre des Travaux Publics"
+
+[[groupes.membres]]
+cle = "p1r2c3"
+grade = "Chef de Bataillon"
+nom = "Abdourahamane KABA"
+fonction = "Ministre des Transports"
+
+[[groupes.membres]]
+cle = "p1r3c0"
+grade = "Capitaine"
+nom = "Kerfalla CAMARA"
+fonction = "Ministre de l’Urbanisme, de l’Habitat et des Domaines"
+
+[[groupes.membres]]
+cle = "p1r3c1"
+grade = "Capitaine"
+nom = "Jean TRAORÉ"
+fonction = "Ministre des Mines et de la Géologie"
+
+[[groupes.membres]]
+cle = "p1r3c2"
+grade = "Capitaine"
+nom = "M. Lamine SAKHO"
+fonction = "Ministre de l’Industrie"
+
+[[groupes.membres]]
+cle = "p1r3c3"
+grade = "Chef de Bataillon"
+nom = "A. Kabassan KEITA"
+fonction = "Ministre de l’Énergie – Konkouré"
+
+[[groupes.membres]]
+cle = "p2r0c0"
+grade = "Capitaine"
+nom = "M. Pathé BARRY"
+fonction = "Ministre des Petites et Moyennes Entreprises"
+
+[[groupes.membres]]
+cle = "p2r0c1"
+grade = "Chef de Bataillon"
+nom = "Alhousseny FOFANA"
+fonction = "Ministre de l’Agriculture"
+
+[[groupes.membres]]
+cle = "p2r0c2"
+grade = "Capitaine"
+nom = "Alpha O. DIALLO (Barou)"
+fonction = "Ministre des Pêches et de l’Élevage"
+
+[[groupes.membres]]
+cle = "p2r0c3"
+grade = "Chef de Bataillon"
+nom = "Sidy Mohamed KEITA"
+fonction = "Ministre de l’Enseignement Supérieur"
+
+[[groupes.membres]]
+cle = "p2r1c0"
+grade = "Monsieur"
+nom = "Abou CAMARA"
+fonction = "Ministre de l’Enseignement Pré-Universitaire"
+
+[[groupes.membres]]
+cle = "p2r1c1"
+grade = "Monsieur"
+nom = "Zainoul S. ABIDINE"
+fonction = "Ministre de l’Enseignement Technique, Moyen et de la Formation Professionnelle"
+
+[[groupes.membres]]
+cle = "p2r1c2"
+grade = "Chef de Bataillon"
+nom = "Lama KOLIPÉ"
+fonction = "Ministre de la Justice"
+
+[[groupes.membres]]
+cle = "p2r1c3"
+grade = "Capitaine"
+nom = "Ahmadou KOUYATÉ"
+fonction = "Ministre des P.T.T."
+
+[[groupes.membres]]
+cle = "p2r2c0"
+grade = "Capitaine"
+nom = "Mamadou BALDET"
+fonction = "Ministre du Travail et de la Fonction Publique"
+
+[[groupes.membres]]
+cle = "p2r2c1"
+grade = "Docteur"
+nom = "Mamadou Bah KABA"
+fonction = "Ministre de la Santé Publique"
+
+[[groupes.membres]]
+cle = "p2r2c2"
+grade = "Docteur"
+nom = "Mariama D. BARRY"
+fonction = "Ministre des Affaires Sociales"
+
+[[groupes.membres]]
+cle = "p2r2c3"
+grade = "El Hadj"
+nom = "Abdourahamane BAH"
+fonction = "Ministre des Affaires Islamiques"
+
+[[groupes.membres]]
+cle = "p2r3c0"
+grade = "Capitaine"
+nom = "Mohamed TRAORÉ"
+fonction = "Ministre de l’Information"
+
+[[groupes.membres]]
+cle = "p2r3c1"
+grade = "Capitaine"
+nom = "Mamadi BAYO"
+fonction = "Ministre de la Jeunesse"
+
+[[groupes.membres]]
+cle = "p2r3c2"
+grade = "Lieutenant"
+nom = "M. Thiana DIALLO"
+fonction = "Secrétaire d’État aux Eaux et Forêts"
+
+[[groupes.membres]]
+cle = "p2r3c3"
+grade = "Adjudant-chef"
+nom = "Joseph Gbago ZOUMANIGUI"
+fonction = "Secrétaire d’État à l’Énergie"
+
+[[groupes]]
+titre = "Gouverneurs et Secrétaires Généraux"
+colonnes = 7
+ratio = "1 / 1"
+largeur_pct = 87.5
+
+[[groupes.membres]]
+cle = "p2r4c0"
+grade = "Chef de Bataillon"
+nom = "Kerfalla KOUROUMA"
+fonction = "Gouverneur Général de la Province de Conakry"
+
+[[groupes.membres]]
+cle = "p2r4c1"
+grade = "Capitaine"
+nom = "Kabiné KABA"
+fonction = "Gouverneur des Banques et Assurances"
+
+[[groupes.membres]]
+cle = "p2r4c2"
+grade = "Monsieur"
+nom = "Saïdou DIALLO"
+fonction = "Vice-Gouverneur des Banques et Assurances"
+
+[[groupes.membres]]
+cle = "p2r4c3"
+grade = "Capitaine"
+nom = "Bakary SAKO"
+fonction = "Gouverneur de la Région de Conakry"
+
+[[groupes.membres]]
+cle = "p2r5c0"
+grade = "Lieutenant"
+nom = "Abdourahamane DIALLO"
+fonction = "Ambassadeur, Chef du Protocole"
+
+[[groupes.membres]]
+cle = "p2r5c1"
+grade = "Capitaine"
+nom = "Sékou TRAORÉ"
+fonction = "Secrétaire Général du Gouvernement"
+
+[[groupes.membres]]
+cle = "p2r5c2"
+grade = "Capitaine"
+nom = "Ahmadou MANGATA"
+fonction = "Secrétaire Général à la Présidence"

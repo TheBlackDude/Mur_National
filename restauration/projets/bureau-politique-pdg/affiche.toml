@@ -1,0 +1,144 @@
+titre_document = "Le Bureau Politique National — 12e Congrès du PDG"
+sur_titre = "Parti Démocratique de Guinée"
+titre = "Le Bureau Politique National"
+date = "issu du 12<sup>e</sup> Congrès du PDG"
+date_italique = true
+source = [
+  "<b>Source :</b> presse nationale, « Le Bureau Politique National (issu du 12<sup>e</sup> Congrès du PDG) ».",
+  "Portraits restaurés à partir des archives de presse — titres et fonctions tels que publiés.",
+  "Présidence de la République · Secrétariat Général du Gouvernement",
+]
+
+[nettoyage]
+marge = 3
+ombres = 0.0
+
+[pied]
+mention = "68<sup>e</sup> Fête Nationale\n2 octobre 2026"
+logo = "logo68.png"
+
+css = """
+.leaders { margin: 11mm 0 12mm; }
+"""
+
+[[dirigeants]]
+cle = "toure"
+grade = "Le camarade"
+nom = "Ahmed Sékou TOURÉ"
+fonction = "Secrétaire Général du PDG · Responsable Suprême de la Révolution"
+hauteur_mm = 130
+
+[[groupes]]
+titre = "Membres du Bureau Politique National"
+colonnes = 6
+ratio = "3 / 4"
+largeur_pct = 100
+espace_lignes_mm = 12
+
+[[groupes.membres]]
+cle = "beavogui"
+grade = "Docteur"
+nom = "Lansana BÉAVOGUI"
+fonction = "Premier Ministre"
+
+[[groupes.membres]]
+cle = "diakite"
+grade = "El Hadj"
+nom = "Moussa DIAKITÉ"
+fonction = "Ministre des Domaines, de l’Urbanisme et de l’Habitat"
+
+[[groupes.membres]]
+cle = "itoure"
+grade = "El Hadj"
+nom = "Ismaël TOURÉ"
+fonction = "Ministre des Mines et de la Géologie"
+
+[[groupes.membres]]
+cle = "nfkeita"
+grade = "El Hadj"
+nom = "N’Famara KEITA"
+fonction = "Ministre de l’Énergie – Konkouré"
+
+[[groupes.membres]]
+cle = "diane"
+grade = "El Hadj Général"
+nom = "Lansana DIANÉ"
+fonction = "Ministre de l’Armée Populaire"
+
+[[groupes.membres]]
+cle = "mkeita"
+grade = "El Hadj"
+nom = "Mamadi KEITA"
+fonction = "Ministre de l’Enseignement Supérieur et de la Recherche Scientifique"
+
+[[groupes.membres]]
+cle = "atoure"
+grade = "El Hadj"
+nom = "Abdoulaye TOURÉ"
+fonction = "Ministre des Affaires Extérieures"
+
+[[groupes.membres]]
+cle = "cherif"
+grade = "El Hadj"
+nom = "Sékou CHÉRIF"
+fonction = "Ministre de l’Intérieur et de la Sécurité"
+
+[[groupes.membres]]
+cle = "sangare"
+grade = "El Hadj"
+nom = "Toumany SANGARÉ"
+fonction = "Ministre de l’Agriculture"
+
+[[groupes.membres]]
+cle = "cisse"
+grade = "Hadja"
+nom = "Jeanne Martin CISSÉ"
+fonction = "Ministre des Affaires Sociales"
+
+[[groupes.membres]]
+cle = "balde"
+grade = "El Hadj"
+nom = "Diao BALDÉ"
+fonction = "Ministre du Commerce Intérieur"
+
+[[groupes.membres]]
+cle = "dcamara"
+grade = "El Hadj"
+nom = "Damantang CAMARA"
+fonction = "Président de l’Assemblée Populaire Nationale"
+
+[[groupes.membres]]
+cle = "mdiallo"
+grade = "El Hadj"
+nom = "Mouctar DIALLO"
+fonction = "Ministre de l’Enseignement Moyen et de la Formation Professionnelle"
+
+[[groupes.membres]]
+cle = "behanzin"
+grade = ""
+nom = "Sénainon BÉHANZIN"
+fonction = "Ministre des FAPA et des Coopératives Agricoles"
+
+[[groupes.membres]]
+cle = "cissoko"
+grade = "El Hadj"
+nom = "Fily CISSOKO"
+fonction = "Commissaire Général de la Révolution de Boké"
+
+[[groupes.membres]]
+cle = "guilavogui"
+grade = ""
+nom = "Galéma GUILAVOGUI"
+fonction = "Ministre de l’Enseignement Pré-Universitaire et de l’Alphabétisation"
+
+[[groupes.membres]]
+cle = "barry"
+grade = "Docteur"
+nom = "Abdoulaye BARRY"
+fonction = "Commissaire Général de la Révolution de Kankan"
+
+[[groupes.membres]]
+cle = "mmdiallo"
+grade = ""
+nom = "Mahmoud Maz DIALLO"
+fonction = "Ambassadeur à Bamako"
