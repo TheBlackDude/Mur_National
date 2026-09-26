@@ -21,3 +21,9 @@ restauration/projets/*/sortie/
 restauration/projets/*/cadres_debug*.jpg
 restauration/projets/*/planche_*.jpg
 __pycache__/
+
+# Affiches murales : HTML intermédiaire (images en data-URI), régénéré par affiches/build.py
+affiches/html/
+affiches/tools/
+affiches/sortie/
+affiches/photos/

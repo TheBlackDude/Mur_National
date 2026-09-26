@@ -105,7 +105,7 @@ fonction = "Ministre du Commerce Intérieur"
 cle = "dcamara"
 grade = "El Hadj"
 nom = "Damantang CAMARA"
-fonction = "Président de l’Assemblée Populaire Nationale"
+fonction = "Président de l’APN"
 
 [[groupes.membres]]
 cle = "mdiallo"
@@ -123,7 +123,7 @@ fonction = "Ministre des FAPA et des Coopératives Agricoles"
 cle = "cissoko"
 grade = "El Hadj"
 nom = "Fily CISSOKO"
-fonction = "Commissaire Général de la Révolution de Boké"
+fonction = "CGR de Boké"
 
 [[groupes.membres]]
 cle = "guilavogui"
@@ -135,7 +135,7 @@ fonction = "Ministre de l’Enseignement Pré-Universitaire et de l’Alphabéti
 cle = "barry"
 grade = "Docteur"
 nom = "Abdoulaye BARRY"
-fonction = "Commissaire Général de la Révolution de Kankan"
+fonction = "CGR de Kankan"
 
 [[groupes.membres]]
 cle = "mmdiallo"
