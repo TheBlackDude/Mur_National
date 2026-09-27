@@ -13,6 +13,7 @@ Run everything from the repository root with Node 20 or newer.
 node scripts/set-role.mjs cabinet@example.com protocol   # Cabinet SGG: /admin/invitations
 node scripts/set-role.mjs agent@example.com gate         # gate agents: /controle only
 # Claims are replaced each time: repeat the roles the person already has (e.g. moderator editor admin protocol gate).
+node scripts/set-role.mjs new@gmail.com moderator editor admin --create   # account not signed in yet: pre-create it
 ```
 
 ## `seed-protocol.mjs` — the Presidency and Government links
