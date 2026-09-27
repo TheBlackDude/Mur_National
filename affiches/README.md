@@ -127,6 +127,13 @@ agrandi ×4 (`photos/bienvenue/logo68-x4.png`), Simandou 2040 dessous
 (`photos/bienvenue/logo-simandou-2040.png`, blanc détouré) et SGG et CDA aux deux coins du bas. Sortie dans
 `sortie/bienvenue/` avec `apercu.png` (portique assemblé).
 
+## SGG × Dokuma (bâche 2,50 × 1,80 m)
+
+`dokuma.py` refait le visuel « Dokuma.jpeg » (PNGVCD) à 2,50 × 1,80 m avec ses textes et ses couleurs
+(nuit #010E2E, jaune #E5C34E, Poppins dans `assets/fonts/`), le sceau du SGG remplacé par le logo
+sgg.gov.gn, les logos CDA et 68 en bas, le logo Dokuma refait net (icône de dokuma.rw agrandie ×4 dans
+`photos/dokuma/`) et le motif de circuit imprimé dessiné en SVG. Sortie dans `sortie/dokuma/`.
+
 ## Les Compagnons de l'Indépendance (bannière 20:9)
 
 `compagnons.py` reconstruit le visuel « Guinea's Independence Visual Compagnons 1 » du
