@@ -61,6 +61,7 @@ body { @apply bg-bg text-ink font-sans antialiased; margin: 0; }
   .screen-tile-out { animation: screen-out .8s cubic-bezier(.4,0,.6,1) both; }
   .screen-hero { animation: screen-in 1s cubic-bezier(.2,.7,.2,1) both; }
   .screen-hero-img { animation: screen-zoom linear both; }
+  .screen-cta { animation: screen-in 1.2s cubic-bezier(.2,.7,.2,1) both; }
 }
 
 @keyframes screen-in { from { opacity: 0; transform: translateY(1.2vh) scale(.98); } to { opacity: 1; transform: none; } }

@@ -240,6 +240,7 @@ function Hero({ lead, durationMs }: { lead: Lead; durationMs: number }) {
 
 /** Every face of the snapshot flies to a cell of the country's silhouette; the gold outline settles once they are in place. */
 function Mosaic({ recent, leads, sinceMs }: { recent: SnapshotItem[]; leads: Lead[]; sinceMs: number }) {
+  const { t } = useI18n()
   const box = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 })
   const [formed, setFormed] = useState(false)
@@ -261,14 +262,27 @@ function Mosaic({ recent, leads, sinceMs }: { recent: SnapshotItem[]; leads: Lea
   }, [recent, leads])
   if (faces.length === 0 || points.length === 0) return <div ref={box} className="absolute inset-0" />
 
-  const scale = Math.min(size.w / GUINEA_VIEWBOX.w, size.h / GUINEA_VIEWBOX.h) * 0.97
-  const ox = (size.w - GUINEA_VIEWBOX.w * scale) / 2, oy = (size.h - GUINEA_VIEWBOX.h * scale) / 2
+  // A band under the map is kept free for the invitation the Minister asked for (27 Sept 2026): it appears once the
+  // tiles are in place and the outline has settled, right above the QR footer.
+  const bandH = size.h * 0.16
+  const mapH = size.h - bandH
+  const scale = Math.min(size.w / GUINEA_VIEWBOX.w, mapH / GUINEA_VIEWBOX.h) * 0.97
+  const ox = (size.w - GUINEA_VIEWBOX.w * scale) / 2, oy = (mapH - GUINEA_VIEWBOX.h * scale) / 2
   const tile = step * scale * 0.9
   const outlineOn = sinceMs > T.build + 800
+  const ctaOn = sinceMs > T.build + 1_800
   return (
     <div ref={box} className="absolute inset-0 overflow-hidden">
       {size.w > 0 && (
         <>
+          <div className="absolute inset-x-0 bottom-0 flex flex-col items-center justify-center text-center px-[4vw]" style={{ height: bandH }}>
+            {ctaOn && (
+              <p className="screen-cta font-bold leading-tight text-[min(2.3vw,4vh)] drop-shadow-[0_0.3vh_1vh_rgba(0,0,0,.35)]">
+                <span className="block h-[0.35vh] w-[6vw] mx-auto mb-[1.4vh] rounded-full bg-gold" aria-hidden />
+                {t('screen.cta')}
+              </p>
+            )}
+          </div>
           <svg viewBox={`0 0 ${GUINEA_VIEWBOX.w} ${GUINEA_VIEWBOX.h}`} className="absolute transition-opacity duration-[1500ms]" style={{ left: ox, top: oy, width: GUINEA_VIEWBOX.w * scale, height: GUINEA_VIEWBOX.h * scale, opacity: outlineOn ? 1 : 0 }} aria-hidden>
             {GUINEA_PATHS.map((d, i) => <path key={i} d={d} fill="none" stroke="#EBAB58" strokeWidth={2.2} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />)}
           </svg>
