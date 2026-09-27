@@ -6,7 +6,7 @@ Questrial, logos 68, SGG et CDA, tricolore) :
   - linteau   6,80 × 0,60 m — logo 68, blocs tricolores, « Bienvenue à la Semaine de la
               Fête Nationale — Mémoire et transmission, le choix de 1958 », logos sgg.gov.gn et CDA ;
   - montants  3,00 × 0,40 m (gauche et droit) — logo 68, Nimba (tournée vers l'entrée), logos SGG et CDA ;
-  - logos     2,80 × 1,30 m et 2,80 × 1,80 m, fond crème — logo 68 en vedette, Simandou 2040 dessous, SGG et CDA aux coins du bas.
+  - logos     2,80 × 1,30 m et 2,80 × 1,50 m, fond crème — logo 68 en vedette, Simandou 2040 dessous, SGG et CDA aux coins du bas.
 
 Le linteau dépasse la taille de page maximale d'un PDF (5,08 m) : il est rendu à l'échelle 1/2
 (3 400 × 300 mm, texte vectoriel, à imprimer à 200 %). Les montants sont à l'échelle 1.
@@ -131,7 +131,7 @@ html, body {{ width: {w}mm; height: {h}mm; background: var(--green); }}
 
 
 def logos(w=1300):
-    # 2 800 (haut) × 1 300 ou 1 800 (large) mm à l'échelle 1, fond crème comme le linteau : le logo 68 en
+    # 2 800 (haut) × 1 300 ou 1 500 (large) mm à l'échelle 1, fond crème comme le linteau : le logo 68 en
     # vedette, Simandou 2040 dessous, SGG et CDA en bas. Même composition quelle que soit la largeur.
     h = 2800
     return f'''<!doctype html><meta charset="utf-8"><style>{FONTS}
@@ -177,4 +177,4 @@ if __name__ == '__main__':
     render('montant-gauche-300x40', montant('gauche'), 30)
     render('montant-droit-300x40', montant('droit'), 30)
     render('logos-130x280', logos(1300), 30)
-    render('logos-180x280', logos(1800), 30)
+    render('logos-150x280', logos(1500), 30)

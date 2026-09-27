@@ -1,4 +1,5 @@
-"""Bâche SGG × Dokuma 2,50 × 1,80 m (demande du 27 sept. 2026, d'après ~/Downloads/Dokuma.jpeg).
+"""Bâche SGG × Dokuma 2,50 × 1,50 m (demande du 27 sept. 2026, d'après ~/Downloads/Dokuma.jpeg ; 1,80 m de haut à l'origine,
+ramenée à 1,50 m le même jour — `python3 dokuma.py 1800` rend l'ancienne hauteur).
 
 Mêmes textes et mêmes couleurs que le visuel d'origine (nuit #010E2E, blanc, jaune #E5C34E, tricolore,
 Poppins). Le sceau rond du SGG est remplacé par le logo sgg.gov.gn (armoiries + texte) ; les logos CDA
@@ -8,13 +9,24 @@ motif de circuit imprimé, dessiné en SVG. PDF à l'échelle 1 (texte vectoriel
 
     python3 dokuma.py
 """
-import pathlib, random, subprocess
+import pathlib, random, subprocess, sys
 
 from mur import CHROME, F, P, uri
 
 ROOT = pathlib.Path(__file__).resolve().parent
 OUT = ROOT / 'sortie' / 'dokuma'
-W, H = 2500, 1800  # mm
+W = 2500  # mm
+H = int(sys.argv[1]) if len(sys.argv) > 1 else 1500  # mm ; la mise en page a été dessinée pour 1 800
+S = H / 1800          # positions et hauteurs verticales
+T = 1 if H >= 1800 else 0.9  # corps de texte
+
+
+def v(mm):  # coordonnée verticale à l'échelle de la hauteur choisie
+    return f'{mm * S:.0f}mm'
+
+
+def fs(mm):  # taille de police
+    return f'{mm * T:.0f}mm'
 
 SGG = P / 'mur' / 'logo-sgg-icone.png'
 CDA = P / 'mur' / 'logo-cda.png'            # version blanche, pour fond sombre
@@ -58,43 +70,43 @@ def html():
 * {{ box-sizing: border-box; margin: 0; padding: 0; }}
 html, body {{ width: {W}mm; height: {H}mm; overflow: hidden; background: var(--navy); -webkit-print-color-adjust: exact; print-color-adjust: exact; }}
 .sheet {{ position: relative; width: {W}mm; height: {H}mm; overflow: hidden; color: #fff; font-family: "Poppins", sans-serif; text-align: center;
-  background: radial-gradient(1400mm 900mm at 50% 45%, #0B2352 0%, var(--navy) 70%); }}
-.circ {{ position: absolute; width: 900mm; height: 700mm; }}
+  background: radial-gradient(1400mm {v(900)} at 50% 45%, #0B2352 0%, var(--navy) 70%); }}
+.circ {{ position: absolute; width: 900mm; height: {v(700)}; }}
 .circ.a {{ left: -80mm; top: -60mm; }} .circ.b {{ right: -80mm; top: -60mm; transform: scaleX(-1); }}
 .circ.c {{ left: -80mm; bottom: -60mm; transform: scaleY(-1); }} .circ.d {{ right: -80mm; bottom: -60mm; transform: scale(-1); }}
-.veil {{ position: absolute; inset: 0; background: radial-gradient(1500mm 1100mm at 50% 50%, rgba(1,14,46,.85) 0%, rgba(1,14,46,.35) 55%, rgba(1,14,46,0) 100%); }}
+.veil {{ position: absolute; inset: 0; background: radial-gradient(1500mm {v(1100)} at 50% 50%, rgba(1,14,46,.85) 0%, rgba(1,14,46,.35) 55%, rgba(1,14,46,0) 100%); }}
 .tri {{ display: flex; height: 6mm; }} .tri i {{ flex: 1; }}
 .tri i:nth-child(1) {{ background: var(--red); }} .tri i:nth-child(2) {{ background: var(--yl); }} .tri i:nth-child(3) {{ background: var(--gn); }}
-.rep {{ position: absolute; top: 78mm; left: 0; right: 0; font-weight: 400; font-size: 34mm; letter-spacing: .04em; }}
+.rep {{ position: absolute; top: {v(78)}; left: 0; right: 0; font-weight: 400; font-size: {fs(34)}; letter-spacing: .04em; }}
 .rep .tri {{ width: 1220mm; margin: 12mm auto 0; }}
-.partners {{ position: absolute; top: 250mm; left: 0; right: 0; height: 330mm; display: flex; align-items: center; justify-content: center; gap: 60mm; }}
-.card {{ width: 470mm; height: 330mm; border: 3mm solid var(--frame); border-radius: 44mm; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12mm;
+.partners {{ position: absolute; top: {v(250)}; left: 0; right: 0; height: {v(330)}; display: flex; align-items: center; justify-content: center; gap: 60mm; }}
+.card {{ width: 470mm; height: {v(330)}; border: 3mm solid var(--frame); border-radius: 44mm; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12mm;
   background: linear-gradient(160deg, rgba(255,255,255,.08), rgba(255,255,255,.02)); box-shadow: 0 0 40mm rgba(47,111,214,.25), inset 0 0 30mm rgba(255,255,255,.05); }}
-.card .arm {{ height: 165mm; }}
-.card .t1 {{ font-family: "Questrial", sans-serif; font-size: 46mm; line-height: 1; }}
-.card .t2 {{ font-family: "Questrial", sans-serif; font-size: 16mm; line-height: 1; color: rgba(255,255,255,.85); }}
+.card .arm {{ height: {v(165)}; }}
+.card .t1 {{ font-family: "Questrial", sans-serif; font-size: {fs(46)}; line-height: 1; }}
+.card .t2 {{ font-family: "Questrial", sans-serif; font-size: {fs(16)}; line-height: 1; color: rgba(255,255,255,.85); }}
 .card .dk {{ display: flex; align-items: center; gap: 14mm; }}
-.card .dk img {{ height: 80mm; }}
-.card .dk b {{ display: block; font-weight: 700; font-size: 60mm; line-height: .95; letter-spacing: -.01em; }}
-.card .dk small {{ display: block; font-weight: 400; font-size: 17mm; line-height: 1; margin-top: 8mm; letter-spacing: .02em; color: rgba(255,255,255,.9); }}
+.card .dk img {{ height: {v(80)}; }}
+.card .dk b {{ display: block; font-weight: 700; font-size: {fs(60)}; line-height: .95; letter-spacing: -.01em; }}
+.card .dk small {{ display: block; font-weight: 400; font-size: {fs(17)}; line-height: 1; margin-top: 8mm; letter-spacing: .02em; color: rgba(255,255,255,.9); }}
 .x {{ display: flex; align-items: center; gap: 56mm; }}
-.x .sgg {{ font-weight: 700; font-size: 44mm; line-height: 1.15; text-transform: uppercase; text-align: right; }}
-.x .cross {{ font-weight: 700; font-size: 110mm; line-height: 1; color: #fff; text-shadow: 0 0 14mm rgba(120,170,255,.95), 0 0 40mm rgba(47,111,214,.8); }}
-.x .dok {{ font-weight: 700; font-size: 60mm; line-height: 1; letter-spacing: .06em; text-align: left; }}
-.tag {{ position: absolute; top: 640mm; left: 0; right: 0; display: flex; justify-content: center; }}
-.tag span {{ position: relative; font-weight: 500; font-size: 33mm; line-height: 1; color: var(--sand); padding: 8mm 40mm; }}
+.x .sgg {{ font-weight: 700; font-size: {fs(44)}; line-height: 1.15; text-transform: uppercase; text-align: right; }}
+.x .cross {{ font-weight: 700; font-size: {fs(110)}; line-height: 1; color: #fff; text-shadow: 0 0 14mm rgba(120,170,255,.95), 0 0 40mm rgba(47,111,214,.8); }}
+.x .dok {{ font-weight: 700; font-size: {fs(60)}; line-height: 1; letter-spacing: .06em; text-align: left; }}
+.tag {{ position: absolute; top: {v(640)}; left: 0; right: 0; display: flex; justify-content: center; }}
+.tag span {{ position: relative; font-weight: 500; font-size: {fs(33)}; line-height: 1; color: var(--sand); padding: 8mm 40mm; }}
 .tag span::before, .tag span::after {{ content: ""; position: absolute; top: 0; bottom: 0; width: 6mm; }}
 .tag span::before {{ left: 0; background: var(--red); }} .tag span::after {{ right: 0; background: var(--yl); }}
-h1 {{ position: absolute; top: 730mm; left: 0; right: 0; font-weight: 700; font-size: 128mm; line-height: 1.1; letter-spacing: -.01em; }}
-.line2 {{ position: absolute; top: 1172mm; left: 50%; width: 860mm; transform: translateX(-50%); }}
-.it {{ position: absolute; top: 1215mm; left: 0; right: 0; font-style: italic; font-weight: 500; font-size: 42mm; line-height: 1.35; }}
-.clic {{ position: absolute; top: 1355mm; left: 0; right: 0; font-weight: 700; font-size: 150mm; line-height: 1; color: var(--yellow); }}
-.foot {{ position: absolute; top: 1590mm; left: 0; right: 0; font-style: italic; font-weight: 500; font-size: 36mm; line-height: 1; }}
-.cda {{ position: absolute; left: 110mm; bottom: 95mm; width: 300mm; }}
-.l68 {{ position: absolute; right: 110mm; bottom: 80mm; width: 190mm; filter: drop-shadow(0 0 10mm rgba(0,0,0,.4)); }}
+h1 {{ position: absolute; top: {v(730)}; left: 0; right: 0; font-weight: 700; font-size: {fs(128)}; line-height: {1.1 if T == 1 else 1.05}; letter-spacing: -.01em; }}
+.line2 {{ position: absolute; top: {v(1172)}; left: 50%; width: 860mm; transform: translateX(-50%); }}
+.it {{ position: absolute; top: {v(1215)}; left: 0; right: 0; font-style: italic; font-weight: 500; font-size: {fs(42)}; line-height: 1.35; }}
+.clic {{ position: absolute; top: {v(1355)}; left: 0; right: 0; font-weight: 700; font-size: {fs(150)}; line-height: 1; color: var(--yellow); }}
+.foot {{ position: absolute; top: {v(1590)}; left: 0; right: 0; font-style: italic; font-weight: 500; font-size: {fs(36)}; line-height: 1; }}
+.cda {{ position: absolute; left: 110mm; bottom: {v(95)}; width: 300mm; }}
+.l68 {{ position: absolute; right: 110mm; bottom: {v(80)}; width: 190mm; filter: drop-shadow(0 0 10mm rgba(0,0,0,.4)); }}
 </style><body><div class="sheet">
-<img class="circ a" src="{svg_uri(circuit(1, 900, 700))}"><img class="circ b" src="{svg_uri(circuit(2, 900, 700))}">
-<img class="circ c" src="{svg_uri(circuit(3, 900, 700))}"><img class="circ d" src="{svg_uri(circuit(4, 900, 700))}">
+<img class="circ a" src="{svg_uri(circuit(1, 900, round(700 * S)))}"><img class="circ b" src="{svg_uri(circuit(2, 900, round(700 * S)))}">
+<img class="circ c" src="{svg_uri(circuit(3, 900, round(700 * S)))}"><img class="circ d" src="{svg_uri(circuit(4, 900, round(700 * S)))}">
 <div class="veil"></div>
 <div class="rep">RÉPUBLIQUE DE GUINÉE — Travail • Justice • Solidarité<div class="tri"><i></i><i></i><i></i></div></div>
 <div class="partners">
@@ -115,9 +127,10 @@ h1 {{ position: absolute; top: 730mm; left: 0; right: 0; font-weight: 700; font-
 
 if __name__ == '__main__':
     OUT.mkdir(parents=True, exist_ok=True)
-    h = OUT / 'sgg-dokuma-250x180.html'; h.write_text(html(), encoding='utf-8')
-    pdf = OUT / 'sgg-dokuma-250x180.pdf'
+    name = f'sgg-dokuma-250x{H // 10}'
+    h = OUT / f'{name}.html'; h.write_text(html(), encoding='utf-8')
+    pdf = OUT / f'{name}.pdf'
     subprocess.run([CHROME, '--headless=new', '--disable-gpu', '--hide-scrollbars', '--no-pdf-header-footer',
                     f'--print-to-pdf={pdf}', h.resolve().as_uri()], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    subprocess.run(['pdftoppm', '-r', '30', '-png', '-singlefile', str(pdf), str(OUT / 'sgg-dokuma-250x180')], check=True)
+    subprocess.run(['pdftoppm', '-r', '30', '-png', '-singlefile', str(pdf), str(OUT / name)], check=True)
     print(pdf)

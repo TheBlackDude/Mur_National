@@ -122,14 +122,14 @@ Design ») dans la charte du Mur de la Mémoire. **Linteau** crème : logo 68, b
 le montant droit), titre vertical, logos SGG et CDA. La Nimba vient de `~/Downloads/Nimba
 logo.jpg`, détourée par GrabCut et agrandie ×4 (`photos/bienvenue/nimba.png`). Le linteau
 dépasse la page PDF maximale : PDF à l'**échelle 1/2** (imprimer à 200 %) ; les montants sont
-à l'échelle 1. Une quatrième bâche (`logos(w)`), en **1,30 × 2,80 m** et **1,80 × 2,80 m**, crème comme le linteau, porte le logo 68
+à l'échelle 1. Une quatrième bâche (`logos(w)`), en **1,30 × 2,80 m** et **1,50 × 2,80 m**, crème comme le linteau, porte le logo 68
 agrandi ×4 (`photos/bienvenue/logo68-x4.png`), Simandou 2040 dessous
 (`photos/bienvenue/logo-simandou-2040.png`, blanc détouré) et SGG et CDA aux deux coins du bas. Sortie dans
 `sortie/bienvenue/` avec `apercu.png` (portique assemblé).
 
-## SGG × Dokuma (bâche 2,50 × 1,80 m)
+## SGG × Dokuma (bâche 2,50 × 1,50 m)
 
-`dokuma.py` refait le visuel « Dokuma.jpeg » (PNGVCD) à 2,50 × 1,80 m avec ses textes et ses couleurs
+`dokuma.py` refait le visuel « Dokuma.jpeg » (PNGVCD) à 2,50 × 1,50 m avec ses textes et ses couleurs
 (nuit #010E2E, jaune #E5C34E, Poppins dans `assets/fonts/`), le sceau du SGG remplacé par le logo
 sgg.gov.gn, les logos CDA et 68 en bas, le logo Dokuma refait net (icône de dokuma.rw agrandie ×4 dans
 `photos/dokuma/`) et le motif de circuit imprimé dessiné en SVG. Sortie dans `sortie/dokuma/`.
