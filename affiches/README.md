@@ -46,6 +46,10 @@ cartes supplémentaires : `guinea_labelled()` (préfectures nommées, couleur pa
   (armoiries, logo 68) reste en bas. C'est le format demandé le 25 septembre 2026 pour les
   bâches enroulables du site.
 
+Un troisième format, la **bâche 1,30 × 2,80 m** (`--bache`, `sortie/bache-130x280/`), applique
+les mêmes règles que le roll-up avec des marges ×1,3 et le contenu ×2,19 ; demandé le 27 sept. 2026
+pour les affiches 06 et 10 : `python3 build.py 06 10 --bache`.
+
 ## Produire
 
 ```sh
@@ -108,6 +112,20 @@ spectateur), Moussa Dadis Camara à sa gauche ; **1,80 × 1,50 m** Mamadi Doumbo
 Sékouba Konaté à sa droite, Alpha Condé à sa gauche. « À sa droite » est lu du point de vue du
 personnage (protocole), ce qui donne l'ordre chronologique de gauche à droite. PDF à
 l'échelle 1 + PNG 100 dpi dans `sortie/mur-memoire-diptyque/`.
+
+## Le portique de bienvenue (linteau 6,80 × 0,60 m + deux montants 3,00 × 0,40 m)
+
+`bienvenue.py` habille l'entrée du site (demande du 27 sept. 2026, d'après « SENAG Welcome
+Design ») dans la charte du Mur de la Mémoire. **Linteau** crème : logo 68, blocs tricolores,
+« Bienvenue à la Semaine de la Fête Nationale — Mémoire et transmission, le choix de 1958 », logos sgg.gov.gn et CDA (version couleur, `photos/bienvenue/logo-cda-couleur.png`).
+**Montants** vert Présidence, cadre or : logo 68, Nimba tournée vers l'entrée (retournée sur
+le montant droit), titre vertical, logos SGG et CDA. La Nimba vient de `~/Downloads/Nimba
+logo.jpg`, détourée par GrabCut et agrandie ×4 (`photos/bienvenue/nimba.png`). Le linteau
+dépasse la page PDF maximale : PDF à l'**échelle 1/2** (imprimer à 200 %) ; les montants sont
+à l'échelle 1. Une quatrième bâche (`logos(w)`), en **1,30 × 2,80 m** et **1,80 × 2,80 m**, crème comme le linteau, porte le logo 68
+agrandi ×4 (`photos/bienvenue/logo68-x4.png`), Simandou 2040 dessous
+(`photos/bienvenue/logo-simandou-2040.png`, blanc détouré) et SGG et CDA aux deux coins du bas. Sortie dans
+`sortie/bienvenue/` avec `apercu.png` (portique assemblé).
 
 ## Les Compagnons de l'Indépendance (bannière 20:9)
 

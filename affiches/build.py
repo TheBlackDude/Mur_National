@@ -32,6 +32,20 @@ html, body { width: 1000mm; height: 2000mm; }
 .scale .body > .rows { justify-content: space-between; }
 .scale .wrap > .tl { display: flex; flex-direction: column; justify-content: space-between; }
 '''),
+    # Bâche 1,30 × 2,80 m (27 sept. 2026) : mêmes règles que le roll-up, marges ×1,3, contenu ×2,19.
+    'bache': dict(dir='bache-130x280', css='''
+@page { size: 1300mm 2800mm; margin: 0; }
+html, body { width: 1300mm; height: 2800mm; }
+.tri { height: 16mm; }
+.mount { top: 42mm; left: 42mm; right: 42mm; bottom: 42mm; border-width: 1.6mm; outline-width: .6mm; outline-offset: 3.6mm; }
+.page { top: 68mm; left: 74mm; right: 74mm; bottom: 65mm; }
+.scale { zoom: 2.1901; width: 526mm; height: 1217.7mm; display: flex; flex-direction: column; }
+.scale .body { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-between; }
+.scale footer { margin-top: 12mm; }
+.scale .body > .grid, .scale .body > .tl, .scale .body > .wrap, .scale .body > .rows, .scale .body > .cols, .scale .body > .mosaic { flex: 1 1 auto; align-content: space-between; }
+.scale .body > .rows { justify-content: space-between; }
+.scale .wrap > .tl { display: flex; flex-direction: column; justify-content: space-between; }
+'''),
 }
 FORMAT = 'a1'
 
@@ -593,9 +607,11 @@ def main():
     POSTERS.update(POSTERS2)
     args = [a for a in sys.argv[1:] if not a.startswith('--')]
     flags = [a for a in sys.argv[1:] if a.startswith('--')]
-    formats = [f for f in ('a1', 'rollup') if f'--{f}' in flags] or ['a1', 'rollup']
+    formats = [f for f in ('a1', 'rollup', 'bache') if f'--{f}' in flags] or ['a1', 'rollup']
     keys = args or list(POSTERS)
+    import build  # serie2 importe ce fichier sous le nom « build » : même FORMAT pour ses affiches
     for FORMAT in formats:
+        build.FORMAT = FORMAT
         out = OUT / FORMATS[FORMAT]['dir']; html = HTML / FORMATS[FORMAT]['dir']
         out.mkdir(parents=True, exist_ok=True); html.mkdir(parents=True, exist_ok=True)
         for k in keys:

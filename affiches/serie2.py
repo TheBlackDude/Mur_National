@@ -417,7 +417,8 @@ def a20():
 .hero .txt { flex: 1; }
 .hero .url { font-family: "Optima", sans-serif; font-weight: 600; font-size: 19mm; letter-spacing: .02em; color: var(--gold-2); line-height: 1; }
 .hero .p { font-size: 9mm; line-height: 1.32; color: var(--cream); margin-top: 6mm; }
-.hero .p b { color: var(--gold-2); font-weight: normal; }
+.hero .p b { color: var(--gold-2); font-weight: normal; white-space: nowrap; }
+.title .over { letter-spacing: .2em; }
 .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8mm; margin-top: 12mm; }
 .s { border-top: .5mm solid var(--gold-2); padding-top: 4mm; }
 .s b { display: block; font-weight: normal; font-size: 21mm; line-height: 1; color: var(--gold-2); }
@@ -449,7 +450,7 @@ def a20():
 </div>
 <div class="tags">#FierDêtreGuinéen · #Guinée68 · #68Fiertés</div>
 '''
-    return shell('renouveau', '68<sup>e</sup> Fête Nationale · 2 octobre 2026', body, '20', css, zoom=1.55)
+    return shell('renouveau', '68<sup>e</sup> Fête Nationale · 2 octobre 2026', body, '20', css, zoom=1.72)
 
 
 POSTERS2 = {
