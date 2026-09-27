@@ -1,16 +1,16 @@
-import { useState } from 'react'
-import { collection, doc, getDocs, limit, query, serverTimestamp, setDoc, where } from 'firebase/firestore'
+import { useEffect, useRef, useState } from 'react'
+import { collection, doc, getDoc, getDocs, limit, query, where } from 'firebase/firestore'
 import { getDownloadURL, ref as sref } from 'firebase/storage'
 import { auth, db, storage } from '../lib/firebase'
 import { useI18n } from '../lib/i18n'
 import { placeName } from '../lib/places'
-import { MAX_LEADS, sequenceDurationMs, useScreenConfig, type Lead } from '../lib/screen'
+import { MAX_LEADS, sequenceDurationMs, useScreenConfig, writeScreen, type Lead } from '../lib/screen'
 import type { Contribution } from './types'
 
 /**
  * Operator panel for the giant screen (Dashboard, editors): pick up to 10 approved selfies in order — the President
  * first — then « Lancer la séquence »: every /ecran empties, shows them one by one and gathers all faces into the map
- * of Guinea, held until « Retour à la normale ». The list lives in config/screen so every operator sees the same one.
+ * of Guinea, held until « Retour à la normale ». The list lives in RTDB `screen` so every operator sees the same one.
  */
 export default function ScreenSequence() {
   const { t, lang } = useI18n()
@@ -22,9 +22,17 @@ export default function ScreenSequence() {
   const running = cfg?.sequence ?? null
   const say = (text: string, tone: 'ok' | 'error' = 'ok') => setMsg({ text, tone })
 
-  async function write(patch: Record<string, unknown>) {
-    await setDoc(doc(db, 'config', 'screen'), { ...patch, updatedAt: serverTimestamp(), updatedByEmail: auth.currentUser?.email ?? null }, { merge: true })
-  }
+  const write = (patch: { leads?: Lead[]; sequence?: 'launch' | null }) => writeScreen(patch, auth.currentUser?.email ?? null)
+  // One-time move (27 Sept 2026): the list chosen before the switch to RTDB still sits in Firestore config/screen.
+  const imported = useRef(false)
+  useEffect(() => {
+    if (!cfg || cfg.exists || imported.current) return
+    imported.current = true
+    getDoc(doc(db, 'config', 'screen')).then((s) => {
+      const old = (s.data()?.leads as Lead[] | undefined) ?? []
+      if (old.length) return write({ leads: old })
+    }).catch(() => { /* nothing to move, or no Firestore access on this laptop */ })
+  }, [cfg])  // eslint-disable-line react-hooks/exhaustive-deps
   async function saveLeads(next: Lead[]) {
     setBusy(true)
     try { await write({ leads: next.slice(0, MAX_LEADS) }) } catch (e) { say((e as Error).message, 'error') } finally { setBusy(false) }
@@ -74,7 +82,7 @@ export default function ScreenSequence() {
   }
   async function launch() {
     setBusy(true); setMsg(null)
-    try { await write({ sequence: { id: crypto.randomUUID(), startAt: serverTimestamp() } }); say(t('dash.seq.launched')) }
+    try { await write({ sequence: 'launch' }); say(t('dash.seq.launched')) }
     catch (e) { say((e as Error).message, 'error') } finally { setBusy(false) }
   }
   async function reset() {

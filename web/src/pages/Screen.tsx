@@ -3,7 +3,7 @@ import { useNationalCount } from '../components/LiveCounter'
 import { useI18n } from '../lib/i18n'
 import { useAppConfig, useSnapshot, type SnapshotItem } from '../lib/snapshot'
 import { MISSION_ISOS, placeName } from '../lib/places'
-import { GUINEA_PATHS, GUINEA_VIEWBOX, mapPoints, phaseAt, SEQUENCE_MAX_AGE_MS, T, useScreenConfig, type Lead, type ScreenConfig } from '../lib/screen'
+import { GUINEA_PATHS, GUINEA_VIEWBOX, mapPoints, phaseAt, SEQUENCE_MAX_AGE_MS, T, useScreenConfig, useServerOffset, type Lead, type ScreenConfig } from '../lib/screen'
 import prefectures from '../data/prefectures.json'
 
 const WINDOW = 24
@@ -19,6 +19,7 @@ const DEMO_CFG: ScreenConfig | null = DEMO ? {
     { id: 'm12', participantNumber: 12, thumbUrl: demoFace(12, true), vip: 'minister', prefecture: 'KAL' },
   ],
   sequence: { id: 'demo', startAt: new Date(Date.now() + 1500) },
+  exists: true,
 } : null
 type Corner = 'tl' | 'tr' | 'bl' | 'br'
 const asset = (name: string) => `${import.meta.env.BASE_URL}${name}`
@@ -107,10 +108,12 @@ function Board() {
   const [offset, setOffset] = useState(0)
   const [fade, setFade] = useState(true)
   const preload = useRef<HTMLImageElement[]>([])
-  // Sequence launched from the admin (config/screen): the faces leave, the leads appear, the map forms and holds.
+  // Sequence launched from the admin (RTDB `screen`, polled): the faces leave, the leads appear, the map forms and holds.
+  // The timeline runs on the server's clock (startAt is a server timestamp): `offset` corrects this PC's clock.
   const liveCfg = useScreenConfig()
+  const clockOffset = useServerOffset()
   const screenCfg = DEMO ? DEMO_CFG : liveCfg
-  const sequence = screenCfg?.sequence && Date.now() - screenCfg.sequence.startAt.getTime() < SEQUENCE_MAX_AGE_MS ? screenCfg.sequence : null
+  const sequence = screenCfg?.sequence && Date.now() + clockOffset - screenCfg.sequence.startAt.getTime() < SEQUENCE_MAX_AGE_MS ? screenCfg.sequence : null
   const active = sequence !== null
   const activeRef = useRef(active)
   activeRef.current = active
@@ -173,7 +176,7 @@ function Board() {
             )
           })}
         </ul>
-        {active && screenCfg && sequence && <Sequence key={sequence.id} cfg={screenCfg} startAt={sequence.startAt} recent={recent} />}
+        {active && screenCfg && sequence && <Sequence key={sequence.id} cfg={screenCfg} startAt={sequence.startAt} offset={clockOffset} recent={recent} />}
       </div>
 
       {/* Footer: QR to the studio · latest participant + coverage · hashtag, then the flag hairline */}
@@ -209,9 +212,9 @@ function Board() {
 const MAP_TILES = 220
 const SEQ_TICK_MS = 100
 
-function Sequence({ cfg, startAt, recent }: { cfg: ScreenConfig; startAt: Date; recent: SnapshotItem[] }) {
-  const [elapsed, setElapsed] = useState(() => Date.now() - startAt.getTime())
-  useEffect(() => { const id = window.setInterval(() => setElapsed(Date.now() - startAt.getTime()), SEQ_TICK_MS); return () => clearInterval(id) }, [startAt])
+function Sequence({ cfg, startAt, offset, recent }: { cfg: ScreenConfig; startAt: Date; offset: number; recent: SnapshotItem[] }) {
+  const [elapsed, setElapsed] = useState(() => Date.now() + offset - startAt.getTime())
+  useEffect(() => { const id = window.setInterval(() => setElapsed(Date.now() + offset - startAt.getTime()), SEQ_TICK_MS); return () => clearInterval(id) }, [startAt, offset])
   const phase = phaseAt(elapsed, cfg.leads.length)
   // Warm the leads' large renditions while the faces are leaving.
   useEffect(() => { cfg.leads.forEach((l) => { const img = new Image(); img.decoding = 'async'; img.src = l.publicUrl ?? l.thumbUrl }) }, [cfg.leads])

@@ -78,8 +78,7 @@ events/{eventId}/checkins/{gid} gate, by, byEmail, at, offline, lifted{by, at, p
                                 // (supervisor lifts a « déjà entré » refusal at the gate) or delete it (admin cancels the entry).
 events/{eventId}/scans/{auto}   result: admitted | refused, reason, lifted, guestId, gate, by, at
 eventKeys/{eventId}             privateKey (PKCS8 PEM)          // no client access; signs `<code>.<guestId>.<shortCode>`
-config/screen       leads[] (≤ 10 selfies shown in order), sequence{ id, startAt } | null, updatedAt, updatedByEmail
-                    // giant-screen choreography launched from /admin/tableau (editors): faces leave, leads one by one, map of Guinea held until reset
+config/screen       (legacy, 19–27 Sept 2026) the giant-screen list before it moved to RTDB `screen`; read once by the admin to migrate the leads
 config/app          frames[], targets{ national, perPrefecture }, launchAt, revealAt, degraded (bool),
                     liveCounter (bool, default true), safeSearch, kioskAutoApprove, autoApproveClean (bool, default false), retention{days}
 ```
@@ -96,6 +95,8 @@ meta/protocolOffset             -> { by: 60, oldSeq, at }   (scripts/reserve-pro
 counters/national               -> 48102
 counters/prefectures/{code}     -> 1234
 counters/countries/{iso}        -> 87
+screen                          leads[] (≤ 10 selfies in order), sequence{ id, startAt (server ms) } | null, updatedAt, updatedByEmail
+                                // giant-screen choreography launched from /admin/tableau (editors/admins write, world reads over REST — no App Check)
 rate/{uid}/{hourBucket}         -> 3               (max 5 submissions / device / hour, 20 in kiosk mode)
 ```
 

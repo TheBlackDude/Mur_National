@@ -26,6 +26,10 @@
     "alerts": {
       ".read": false,
       ".write": false
+    },
+    "screen": {
+      ".read": true,
+      ".write": "auth != null && (auth.token.editor == true || auth.token.admin == true)"
     }
   }
 }

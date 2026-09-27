@@ -16,6 +16,7 @@ beforeEach(async () => {
       locks: { 'item-1': { uid: 'mod-1', at: 1 } },
       stats: { hourly: { 2026092510: 4 } },
       alerts: { backlog: 1 },
+      screen: { leads: [{ id: 'c1', participantNumber: 1, thumbUrl: 'https://x/1.jpg' }], sequence: null, updatedByEmail: 'ed@example.com' },
     })
   })
 })
@@ -56,6 +57,16 @@ test('stats: dashboard readers only, no client writes', async () => {
   await denied(get(ref(rt(u.anon), 'stats/hourly')))
   await denied(get(ref(rt(u.citizen), 'stats/hourly')))
   await denied(set(ref(rt(u.admin), 'stats/hourly/2026092511'), 1))
+})
+
+test('screen: the giant-screen sequence is read by every screen without signing in, launched by editors and admins', async () => {
+  await ok(get(ref(rt(u.anon), 'screen')))
+  await ok(update(ref(rt(u.editor), 'screen'), { sequence: { id: 's1', startAt: 1 }, updatedByEmail: 'ed@example.com' }))
+  await ok(update(ref(rt(u.admin), 'screen'), { sequence: null }))
+  await denied(update(ref(rt(u.moderator), 'screen'), { sequence: null }))
+  await denied(update(ref(rt(u.maeiage), 'screen'), { leads: [] }))
+  await denied(update(ref(rt(u.anon), 'screen'), { sequence: null }))
+  await denied(set(ref(rt(u.citizen), 'screen/sequence'), null))
 })
 
 test('root and unknown paths are closed', async () => {
